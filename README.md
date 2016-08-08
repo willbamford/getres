@@ -30,10 +30,6 @@ load(
 )
 ```
 
-## Promise
+## Promises
 
-```
-var swag = require('swag/promises')
-
-const promise = swag({}, null, null, () => {});
-```
+Maybe coming soon.
