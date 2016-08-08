@@ -1,17 +1,18 @@
-# 💎 Swag
+# 💎 Universal Asset Loader
 
-Universal asset loader (Node.js and browser).
+For browser and Node.js asset loading. Designed to work with Canvas and WebGL.
 
-Designed to work with WebGL.
+Compatible with IE10+ and all other modern browsers (no requirement on Promises / ES6).
 
 Inspired by [resl](https://github.com/mikolalysenko/resl).
 
-Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes.
+Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to fetch assets.
 
 ## API
 
 ```js
-swag(
+import load from 'universal-asset-loader';
+load(
   {
     data1: {
       url: 'http://www.example.com/data.json',

@@ -1,18 +1,39 @@
 {
-  "name": "swag",
+  "name": "ual",
   "version": "1.0.0",
-  "description": "Universal Resource Loader (Node.js and Browser)",
-  "main": "src/index.js",
+  "description": "Universal Asset Loader for the Browser and Node.js",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "browserify lib/index.js -o dist/ual.js",
+    "build:min": "browserify lib/index.js | uglifyjs -c > dist/ual.min.js",
+    "watch": "watchify lib/index.js -o dist/ual.js",
+    "lint": "standard",
+    "unit": "ava",
+    "test": "standard && ava"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.js"
+    ],
+    "source": [
+      "lib/**/*.js"
+    ]
+  },
+  "standard": {
+    "ignore": "dist"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WebSeed/swag.git"
+    "url": "git+https://github.com/WebSeed/universal-asset-loader.git"
   },
   "keywords": [
+    "universal-asset-loader",
+    "node",
+    "browser",
+    "asset",
     "resource",
     "loader",
+    "isomorphic",
     "universal",
     "png",
     "jpeg",
@@ -22,13 +43,17 @@
   "author": "Will Bamford",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/WebSeed/swag/issues"
+    "url": "https://github.com/WebSeed/universal-asset-loader/issues"
   },
-  "homepage": "https://github.com/WebSeed/swag#readme",
+  "homepage": "https://github.com/WebSeed/universal-asset-loader#readme",
   "devDependencies": {
-    "standard": "^7.1.2"
+    "ava": "^0.16.0",
+    "browserify": "^13.1.0",
+    "standard": "^7.1.2",
+    "uglifyify": "^3.0.2",
+    "watchify": "^3.7.0"
   },
   "dependencies": {
-    "fetch-ponyfill": "^1.0.0"
+    "superagent": "^2.1.0"
   }
 }
