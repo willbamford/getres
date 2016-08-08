@@ -1,0 +1,34 @@
+{
+  "name": "swag",
+  "version": "1.0.0",
+  "description": "Universal Resource Loader (Node.js and Browser)",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WebSeed/swag.git"
+  },
+  "keywords": [
+    "resource",
+    "loader",
+    "universal",
+    "png",
+    "jpeg",
+    "video",
+    "audio"
+  ],
+  "author": "Will Bamford",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/WebSeed/swag/issues"
+  },
+  "homepage": "https://github.com/WebSeed/swag#readme",
+  "devDependencies": {
+    "standard": "^7.1.2"
+  },
+  "dependencies": {
+    "fetch-ponyfill": "^1.0.0"
+  }
+}
