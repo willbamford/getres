@@ -9,7 +9,8 @@ Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes t
 ## API
 
 ```js
-import getres from 'getres';
+import getres from 'getres'
+
 getres(
   {
     data1: {
@@ -22,13 +23,22 @@ getres(
       parser: (data) => transform(data)
     }
   },
-  () => {}, // On error
-  () => {}, // On complete
-  () => {}  // On progress
+  (err) => { /* on error */ },
+  (resources) => { /* on complete */ },
+  (/* ... */) => { /* on progress */ }
 )
 ```
 
-TODO: using with promises
+### Promises
+
+```js
+import getres from 'getres';
+getres.p(manifest)
+  .then((resources) => {})
+  .catch((err) => {})
+```
+
+You must ensure the environment supports Promises (which can be achieved by [using a suitable polyfill](https://github.com/stefanpenner/es6-promise)).
 
 ## Credits
 
