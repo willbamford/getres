@@ -6,7 +6,7 @@
   "scripts": {
     "build": "browserify lib/index.js -o dist/ual.js",
     "build:min": "browserify lib/index.js | uglifyjs -c > dist/ual.min.js",
-    "watch": "watchify lib/index.js -o dist/ual.js",
+    "watch": "watchify lib/index.js -o dist/getres.js",
     "lint": "standard",
     "unit": "ava",
     "test": "standard && ava"

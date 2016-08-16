@@ -1,18 +1,16 @@
-# 💎 Universal Asset Loader
+# getres
 
-For browser and Node.js asset loading. Designed to work with Canvas and WebGL.
+Browser and Node.js resource loading (text, JSON, binary, images) designed to work with HTML Canvas and WebGL.
 
 Compatible with IE10+ and all other modern browsers (no requirement on Promises / ES6).
-
-Inspired by [resl](https://github.com/mikolalysenko/resl).
 
 Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to fetch assets.
 
 ## API
 
 ```js
-import load from 'universal-asset-loader';
-load(
+import getres from 'getres';
+getres(
   {
     data1: {
       url: 'http://www.example.com/data.json',
@@ -30,6 +28,8 @@ load(
 )
 ```
 
-## Promises
+TODO: using with promises
 
-Maybe coming soon.
+## Credits
+
+API and DOM element loading inspired by [resl](https://github.com/mikolalysenko/resl).
