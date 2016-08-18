@@ -1,15 +1,15 @@
 {
-  "name": "ual",
+  "name": "getres",
   "version": "1.0.0",
   "description": "Universal Asset Loader for the Browser and Node.js",
   "main": "lib/index.js",
   "scripts": {
-    "build": "browserify lib/index.js -o dist/ual.js",
-    "build:min": "browserify lib/index.js | uglifyjs -c > dist/ual.min.js",
-    "watch": "watchify lib/index.js -o dist/getres.js",
+    "build": "browserify lib/index.js -s getres -o dist/getres.js",
+    "build:min": "browserify lib/index.js -s getres | uglifyjs -c > dist/getres.min.js",
+    "watch": "watchify lib/index.js -s getres -o dist/getres.js",
     "lint": "standard",
-    "unit": "ava",
-    "test": "standard && ava"
+    "unit": "ava -v",
+    "test": "standard && ava -v"
   },
   "ava": {
     "files": [
@@ -49,6 +49,9 @@
   "devDependencies": {
     "ava": "^0.16.0",
     "browserify": "^13.1.0",
+    "express": "^4.14.0",
+    "proxyquire": "^1.7.10",
+    "sinon": "^1.17.5",
     "standard": "^7.1.2",
     "uglifyify": "^3.0.2",
     "watchify": "^3.7.0"

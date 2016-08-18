@@ -1,17 +1,46 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var superagent = require('superagent')
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.getres = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var request = require('superagent')
 
-console.log(superagent)
-
-var noop = function () {}
-
-var ual = function (manifest, onError, onComplete, onProgress) {
-  onError = onError || noop
-  onComplete = onComplete || noop
-  onProgress = onProgress || noop
+function createEntries (manifest) {
+  return Object.keys(manifest).map(function (name) {
+    return {
+      name: name,
+      src: manifest[name].src
+    }
+  })
 }
 
-module.exports = ual
+function createResources (entries) {
+  var res = {}
+  entries.forEach(function (entry) {
+    res[entry.name] = entry.resource
+  })
+  return res
+}
+
+var getres = function (manifest, callback) {
+  var entries = createEntries(manifest)
+  var remaining = entries.length
+  var err = null
+  entries.map(function (entry) {
+    request
+      .get(entry.src)
+      .end(function (e, rsp) {
+        remaining -= 1
+        if (e) {
+          err = e
+          return callback(e)
+        } else {
+          entry.resource = rsp.body
+        }
+        if (remaining === 0 && !err) {
+          return callback(null, createResources(entries))
+        }
+      })
+  })
+}
+
+module.exports = getres
 
 },{"superagent":3}],2:[function(require,module,exports){
 
@@ -251,9 +280,7 @@ function serialize(obj) {
   if (!isObject(obj)) return obj;
   var pairs = [];
   for (var key in obj) {
-    if (null != obj[key]) {
-      pushEncodedKeyValuePair(pairs, key, obj[key]);
-    }
+    pushEncodedKeyValuePair(pairs, key, obj[key]);
   }
   return pairs.join('&');
 }
@@ -268,18 +295,22 @@ function serialize(obj) {
  */
 
 function pushEncodedKeyValuePair(pairs, key, val) {
-  if (Array.isArray(val)) {
-    return val.forEach(function(v) {
-      pushEncodedKeyValuePair(pairs, key, v);
-    });
-  } else if (isObject(val)) {
-    for(var subkey in val) {
-      pushEncodedKeyValuePair(pairs, key + '[' + subkey + ']', val[subkey]);
+  if (val != null) {
+    if (Array.isArray(val)) {
+      val.forEach(function(v) {
+        pushEncodedKeyValuePair(pairs, key, v);
+      });
+    } else if (isObject(val)) {
+      for(var subkey in val) {
+        pushEncodedKeyValuePair(pairs, key + '[' + subkey + ']', val[subkey]);
+      }
+    } else {
+      pairs.push(encodeURIComponent(key)
+        + '=' + encodeURIComponent(val));
     }
-    return;
+  } else if (val === null) {
+    pairs.push(encodeURIComponent(key));
   }
-  pairs.push(encodeURIComponent(key)
-    + '=' + encodeURIComponent(val));
 }
 
 /**
@@ -1552,4 +1583,5 @@ function request(RequestConstructor, method, url) {
 
 module.exports = request;
 
-},{}]},{},[1]);
+},{}]},{},[1])(1)
+});

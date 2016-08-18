@@ -23,8 +23,7 @@ getres(
       parser: (data) => transform(data)
     }
   },
-  (err) => { /* on error */ },
-  (resources) => { /* on complete */ },
+  (err, resources) => { },
   (/* ... */) => { /* on progress */ }
 )
 ```
