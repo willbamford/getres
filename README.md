@@ -1,4 +1,4 @@
-# getres
+# getres [![CircleCI](https://circleci.com/gh/WebSeed/getres.svg?style=svg)](https://circleci.com/gh/WebSeed/getres)
 
 Browser and Node.js resource loading (text, JSON, binary, images) designed to work with HTML Canvas and WebGL.
 
