@@ -5,12 +5,14 @@ function createEntries (manifest) {
   return Object.keys(manifest).map(function (name) {
     return {
       name: name,
-      src: manifest[name].src
+      src: manifest[name].src,
+      type: manifest[name].type || 'text',
+      parser: manifest[name].parser || function (resource) { return resource }
     }
   })
 }
 
-function createResources (entries) {
+function extract (entries) {
   var res = {}
   entries.forEach(function (entry) {
     res[entry.name] = entry.resource
@@ -18,25 +20,56 @@ function createResources (entries) {
   return res
 }
 
-var getres = function (manifest, callback) {
+function processHttp (entry, cb) {
+  request
+    .get(entry.src)
+    .end(function (err, response) {
+      cb(err, response ? response.body : null)
+    })
+}
+
+function processJson (entry, cb) {
+  processHttp(entry, function (err, resource) {
+    cb(err, JSON.parse(resource))
+  })
+}
+
+function processInvalidType (entry, cb) {
+  cb(new Error('Invalid manifest type: ' + entry.type))
+}
+
+var processors = {
+  json: processJson,
+  text: processHttp
+}
+
+function process (entry, cb) {
+  var processor = processors[entry.type] || processInvalidType
+  processor(entry, cb)
+}
+
+var getres = function (manifest, cb) {
   var entries = createEntries(manifest)
   var remaining = entries.length
   var err = null
+
+  function done () {
+    cb(null, extract(entries))
+  }
+
   entries.map(function (entry) {
-    request
-      .get(entry.src)
-      .end(function (e, rsp) {
-        remaining -= 1
-        if (e) {
-          err = e
-          return callback(e)
-        } else {
-          entry.resource = rsp.body
-        }
-        if (remaining === 0 && !err) {
-          return callback(null, createResources(entries))
-        }
-      })
+    process(entry, function (e, resource) {
+      if (e) {
+        err = e
+        cb(e)
+      } else {
+        entry.resource = entry.parser(resource)
+      }
+      remaining -= 1
+      if (!remaining && !err) {
+        done(entries)
+      }
+    })
   })
 }
 
