@@ -45,7 +45,10 @@ var processors = {
 
 function process (entry, cb) {
   var processor = processors[entry.type] || processInvalidType
-  processor(entry, cb)
+  processor(entry, function (err, resource) {
+    entry.resource = entry.parser(resource)
+    cb(err)
+  })
 }
 
 var getres = function (manifest, cb) {
@@ -58,12 +61,10 @@ var getres = function (manifest, cb) {
   }
 
   entries.map(function (entry) {
-    process(entry, function (e, resource) {
+    process(entry, function (e) {
       if (e) {
         err = e
         cb(e)
-      } else {
-        entry.resource = entry.parser(resource)
       }
       remaining -= 1
       if (!remaining && !err) {
