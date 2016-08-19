@@ -1,5 +1,6 @@
 var test = require('ava')
 var proxyquire = require('proxyquire')
+var stubImages = require('./fixtures/stub-images')
 
 function mockSuperagent (reqs) {
   return {
@@ -19,7 +20,7 @@ function mockSuperagent (reqs) {
 }
 
 test.cb('get text', (t) => {
-  var getres = proxyquire('../lib/index.js', {
+  var getres = proxyquire('../lib', {
     superagent: mockSuperagent({
       '/foo.txt': { body: 'Foo' },
       '/bar.txt': { body: 'Bar' }
@@ -40,7 +41,7 @@ test.cb('get text', (t) => {
 })
 
 test.cb('get json', (t) => {
-  var getres = proxyquire('../lib/index.js', {
+  var getres = proxyquire('../lib', {
     superagent: mockSuperagent({
       '/zoe.json': { body: '{ "hello": "world!" }' }
     })
@@ -57,8 +58,26 @@ test.cb('get json', (t) => {
   )
 })
 
+test.cb('get png image', (t) => {
+  var getres = proxyquire('../lib', {
+    superagent: mockSuperagent({
+      '/zoe.png': { body: stubImages.png.input }
+    })
+  })
+  getres(
+    {
+      zoe: { src: '/zoe.png', type: 'image' }
+    },
+    function (err, res) {
+      t.is(err, null)
+      t.deepEqual(res.zoe, stubImages.png.expect)
+      t.end()
+    }
+  )
+})
+
 test.cb('handle manifest type error', (t) => {
-  var getres = proxyquire('../lib/index.js', {
+  var getres = proxyquire('../lib', {
     superagent: mockSuperagent({
       '/foo.txt': { body: 'Foo' },
       '/bar.txt': { body: 'Bar' }
@@ -79,7 +98,7 @@ test.cb('handle manifest type error', (t) => {
 
 test.cb('handle http errors', (t) => {
   var mockErr = { Error: 'Not Found' }
-  var getres = proxyquire('../lib/index.js', {
+  var getres = proxyquire('../lib', {
     superagent: mockSuperagent({
       '/foo.txt': { err: mockErr },
       '/bar.txt': { body: 'Foo' }
@@ -99,7 +118,7 @@ test.cb('handle http errors', (t) => {
 })
 
 test.cb('use parser function', (t) => {
-  var getres = proxyquire('../lib/index.js', {
+  var getres = proxyquire('../lib', {
     superagent: mockSuperagent({ '/world.txt': { body: 'hello world' } })
   })
   getres(
