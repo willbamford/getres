@@ -1,6 +1,6 @@
 var test = require('ava')
 var proxyquire = require('proxyquire')
-var stubImages = require('./fixtures/stub-images')
+var imageStubs = require('./fixtures/images')
 
 function mockSuperagent (reqs) {
   return {
@@ -61,16 +61,52 @@ test.cb('get json', (t) => {
 test.cb('get png image', (t) => {
   var getres = proxyquire('../lib', {
     superagent: mockSuperagent({
-      '/zoe.png': { body: stubImages.png.input }
+      '/img.png': { body: imageStubs.png.input }
     })
   })
   getres(
     {
-      zoe: { src: '/zoe.png', type: 'image' }
+      img: { src: '/img.png', type: 'image' }
     },
     function (err, res) {
       t.is(err, null)
-      t.deepEqual(res.zoe, stubImages.png.expect)
+      t.deepEqual(res.img, imageStubs.png.expect)
+      t.end()
+    }
+  )
+})
+
+test.cb('get gif image', (t) => {
+  var getres = proxyquire('../lib', {
+    superagent: mockSuperagent({
+      '/img.gif': { body: imageStubs.gif.input }
+    })
+  })
+  getres(
+    {
+      img: { src: '/img.gif', type: 'image' }
+    },
+    function (err, res) {
+      t.is(err, null)
+      t.deepEqual(res.img, imageStubs.gif.expect)
+      t.end()
+    }
+  )
+})
+
+test.cb('get jpg image', (t) => {
+  var getres = proxyquire('../lib', {
+    superagent: mockSuperagent({
+      '/img.jpg': { body: imageStubs.jpg.input }
+    })
+  })
+  getres(
+    {
+      img: { src: '/img.jpg', type: 'image' }
+    },
+    function (err, res) {
+      t.is(err, null)
+      t.deepEqual(res.img, imageStubs.jpg.expect)
       t.end()
     }
   )
