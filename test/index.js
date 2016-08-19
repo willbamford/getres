@@ -19,12 +19,16 @@ function mockSuperagent (reqs) {
   }
 }
 
+function createGetres (reqs) {
+  return proxyquire('../lib', {
+    superagent: mockSuperagent(reqs)
+  })
+}
+
 test.cb('get text', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/foo.txt': { body: 'Foo' },
-      '/bar.txt': { body: 'Bar' }
-    })
+  var getres = createGetres({
+    '/foo.txt': { body: 'Foo' },
+    '/bar.txt': { body: 'Bar' }
   })
   getres(
     {
@@ -41,10 +45,8 @@ test.cb('get text', (t) => {
 })
 
 test.cb('get json', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/zoe.json': { body: '{ "hello": "world!" }' }
-    })
+  var getres = createGetres({
+    '/zoe.json': { body: '{ "hello": "world!" }' }
   })
   getres(
     {
@@ -59,10 +61,8 @@ test.cb('get json', (t) => {
 })
 
 test.cb('get png image', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/img.png': { body: imageStubs.png.input }
-    })
+  var getres = createGetres({
+    '/img.png': { body: imageStubs.png.input }
   })
   getres(
     {
@@ -77,10 +77,8 @@ test.cb('get png image', (t) => {
 })
 
 test.cb('get gif image', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/img.gif': { body: imageStubs.gif.input }
-    })
+  var getres = createGetres({
+    '/img.gif': { body: imageStubs.gif.input }
   })
   getres(
     {
@@ -95,11 +93,9 @@ test.cb('get gif image', (t) => {
 })
 
 test.cb('get jpg image', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/img1.jpg': { body: imageStubs.jpg.input },
-      '/img2.jpeg': { body: imageStubs.jpg.input }
-    })
+  var getres = createGetres({
+    '/img1.jpg': { body: imageStubs.jpg.input },
+    '/img2.jpeg': { body: imageStubs.jpg.input }
   })
   getres(
     {
@@ -115,12 +111,12 @@ test.cb('get jpg image', (t) => {
   )
 })
 
+test.todo('image errors')
+
 test.cb('handle manifest type error', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/foo.txt': { body: 'Foo' },
-      '/bar.txt': { body: 'Bar' }
-    })
+  var getres = createGetres({
+    '/foo.txt': { body: 'Foo' },
+    '/bar.txt': { body: 'Bar' }
   })
   getres(
     {
@@ -137,11 +133,9 @@ test.cb('handle manifest type error', (t) => {
 
 test.cb('handle http errors', (t) => {
   var mockErr = { Error: 'Not Found' }
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({
-      '/foo.txt': { err: mockErr },
-      '/bar.txt': { body: 'Foo' }
-    })
+  var getres = createGetres({
+    '/foo.txt': { err: mockErr },
+    '/bar.txt': { body: 'Foo' }
   })
   getres(
     {
@@ -157,9 +151,7 @@ test.cb('handle http errors', (t) => {
 })
 
 test.cb('use parser function', (t) => {
-  var getres = proxyquire('../lib', {
-    superagent: mockSuperagent({ '/world.txt': { body: 'hello world' } })
-  })
+  var getres = createGetres({ '/world.txt': { body: 'hello world' } })
   getres(
     {
       hello: {
@@ -176,3 +168,5 @@ test.cb('use parser function', (t) => {
     }
   )
 })
+
+test.todo('parser error')
