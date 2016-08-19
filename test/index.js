@@ -97,16 +97,19 @@ test.cb('get gif image', (t) => {
 test.cb('get jpg image', (t) => {
   var getres = proxyquire('../lib', {
     superagent: mockSuperagent({
-      '/img.jpg': { body: imageStubs.jpg.input }
+      '/img1.jpg': { body: imageStubs.jpg.input },
+      '/img2.jpeg': { body: imageStubs.jpg.input }
     })
   })
   getres(
     {
-      img: { src: '/img.jpg', type: 'image' }
+      img1: { src: '/img1.jpg', type: 'image' },
+      img2: { src: '/img2.jpeg', type: 'image' }
     },
     function (err, res) {
       t.is(err, null)
-      t.deepEqual(res.img, imageStubs.jpg.expect)
+      t.deepEqual(res.img1, imageStubs.jpg.expect)
+      t.deepEqual(res.img2, imageStubs.jpg.expect)
       t.end()
     }
   )
