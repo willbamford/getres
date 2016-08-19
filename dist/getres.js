@@ -34,13 +34,20 @@ function processJson (entry, cb) {
   })
 }
 
+function processImage (entry, cb) {
+  processHttp(entry, function (err, resource) {
+    cb(err, resource)
+  })
+}
+
 function processInvalidType (entry, cb) {
-  cb(new Error('Invalid manifest type: ' + entry.type))
+  cb(new Error('Invalid manifest type: ' + entry.type), {})
 }
 
 var processors = {
   json: processJson,
-  text: processHttp
+  text: processHttp,
+  image: processImage
 }
 
 function process (entry, cb) {
@@ -64,7 +71,7 @@ var getres = function (manifest, cb) {
     process(entry, function (e) {
       if (e) {
         err = e
-        cb(e)
+        cb(e, {})
       }
       remaining -= 1
       if (!remaining && !err) {

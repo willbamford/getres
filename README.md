@@ -1,6 +1,6 @@
 # getres [![CircleCI](https://circleci.com/gh/WebSeed/getres.svg?style=svg)](https://circleci.com/gh/WebSeed/getres)
 
-Browser and Node.js resource loading (text, JSON, binary, images) designed to work with HTML Canvas and WebGL.
+Resource loading in the Browser and Node.js  (text, JSON, binary, images) designed to work with HTML Canvas and WebGL.
 
 Compatible with IE10+ and all other modern browsers (no requirement on Promises / ES6).
 
@@ -13,22 +13,32 @@ import getres from 'getres'
 
 getres(
   {
-    data1: {
-      url: 'http://www.example.com/data.json',
-      parser: JSON.parse,
+    text: {
+      src: 'http://example.com/my.txt'
     },
-    image1: 'http://www.example.com',
-    image2: {
-      url: 'http://www.example.com/image.jpg',
-      parser: (data) => transform(data)
+    parsedText: {
+      src: 'http://example.com/my.txt',
+      parser: (resource) => resource.toUpperCase();
+    },
+    json: {
+      src: 'http://example.com/my.json',
+      type: 'json'
+    },
+    image: {
+      src: 'http://example.com/my.jpg',
+      type: 'image'
     }
   },
-  (err, resources) => { },
-  (/* ... */) => { /* on progress */ }
+  (err, { text, parsedText, json, image }) => {
+    /* Use resources... */
+  },
+  (progress) => { /* Coming soon */ }
 )
 ```
 
 ### Promises
+
+Coming soon...
 
 ```js
 import getres from 'getres';

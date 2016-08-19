@@ -71,7 +71,7 @@ test.cb('handle manifest type error', (t) => {
     },
     function (err, res) {
       t.is(err.message, 'Invalid manifest type: invalid')
-      t.is(res, undefined)
+      t.deepEqual(res, {})
       t.end()
     }
   )
@@ -92,7 +92,7 @@ test.cb('handle http errors', (t) => {
     },
     function (err, res) {
       t.is(err, mockErr)
-      t.is(res, undefined)
+      t.deepEqual(res, {})
       t.end()
     }
   )

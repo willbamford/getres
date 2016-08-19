@@ -57,6 +57,7 @@
     "watchify": "^3.7.0"
   },
   "dependencies": {
+    "lwip": "0.0.9",
     "superagent": "^2.1.0"
   }
 }
