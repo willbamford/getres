@@ -9,10 +9,10 @@
     "watch": "watchify lib/index.js -s getres -o dist/getres.js",
     "lint": "standard",
     "unit": "ava -v",
-    "test": "standard && ava -v"
+    "test": "standard && ava -v -T 3s"
   },
   "browser": {
-    "./lib/loaders/image": "./lib/loaders/browser-image"
+    "./lib/loaders/image": "./lib/loaders/image-browser"
   },
   "ava": {
     "files": [

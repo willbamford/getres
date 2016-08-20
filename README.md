@@ -8,46 +8,56 @@ Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes t
 
 ## API
 
+### Using Promises
+
 ```js
 import getres from 'getres'
 
-getres(
-  {
-    text: {
-      src: 'http://example.com/my.txt'
-    },
-    parsedText: {
-      src: 'http://example.com/my.txt',
-      parser: (resource) => resource.toUpperCase();
-    },
-    json: {
-      src: 'http://example.com/my.json',
-      type: 'json'
-    },
-    image: {
-      src: 'http://example.com/my.jpg',
-      type: 'image'
-    }
+getres({
+  text: {
+    src: 'http://example.com/my.txt'
   },
-  (err, { text, parsedText, json, image }) => {
-    /* Use resources... */
+  parsedText: {
+    src: 'http://example.com/my.txt',
+    parser: (resource, cb) => cb(null, resource.toUpperCase());
   },
-  (progress) => { /* Coming soon */ }
-)
+  json: {
+    src: 'http://example.com/my.json',
+    type: 'json'
+  },
+  image: {
+    src: 'http://example.com/my.jpg',
+    type: 'image'
+  }
+}).then(({ text, parsedText, json, image }) => {
+  /* Do something with resources */
+}).catch((err) => {
+  console.err(err)
+})
 ```
 
-### Promises
+You must ensure the environment supports Promises. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill)).
 
-Coming soon...
+### Using Callbacks
+
+If your environment doesn't support promises you can use good old fashioned callbacks:
 
 ```js
 import getres from 'getres';
-getres.p(manifest)
-  .then((resources) => {})
-  .catch((err) => {})
-```
 
-You must ensure the environment supports Promises (which can be achieved by [using a suitable polyfill](https://github.com/stefanpenner/es6-promise)).
+getres({
+  text: {
+    src: 'http://example.com/my.txt'
+  },
+  (err, resources) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    /* Do something with resources */
+  }
+})
+```
 
 ## Credits
 

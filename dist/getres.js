@@ -10,7 +10,7 @@ function createEntries (manifest) {
       name: name,
       src: manifest[name].src,
       type: manifest[name].type || 'text',
-      parser: manifest[name].parser || function (resource) { return resource }
+      parser: manifest[name].parser || function (resource, cb) { return cb(null, resource) }
     }
   })
 }
@@ -26,25 +26,34 @@ function extract (entries) {
 var loaders = {
   json: loadJson,
   text: loadHttp,
-  image: loadImage
+  image: loadImage,
+  invalidType: loadInvalidType
 }
 
 function load (entry, cb) {
-  var loader = loaders[entry.type] || loadInvalidType
+  var loader = loaders[entry.type] || loaders.invalidType
   loader(entry, function (err, resource) {
-    try {
-      entry.resource = entry.parser(resource)
-    } catch (e) {
-      return cb(e)
+    if (err) {
+      return cb(err)
     }
-    return cb(err)
+    entry.parser(resource, function (err, resource) {
+      if (err) {
+        return cb(err)
+      }
+      entry.resource = resource
+      return cb(null)
+    })
   })
 }
 
-var getres = function (manifest, cb) {
+function getresCallback (manifest, cb) {
   var entries = createEntries(manifest)
   var remaining = entries.length
   var err = null
+
+  function error (err) {
+    cb(err, {})
+  }
 
   function done () {
     cb(null, extract(entries))
@@ -52,11 +61,11 @@ var getres = function (manifest, cb) {
 
   entries.map(function (entry) {
     load(entry, function (e) {
+      remaining -= 1
       if (e) {
         err = e
-        cb(e, {})
+        return error(e)
       }
-      remaining -= 1
       if (!remaining && !err) {
         done(entries)
       }
@@ -64,14 +73,29 @@ var getres = function (manifest, cb) {
   })
 }
 
-module.exports = getres
-
-},{"./loaders/http":3,"./loaders/image":2,"./loaders/invalid-type":4,"./loaders/json":5}],2:[function(require,module,exports){
-module.exports = function loadImage (entry, cb) {
-  cb(new Error('Not implemented yet'))
+function getresPromises (manifest, cb) {
+  if (typeof Promise !== 'undefined') {
+    return new Promise(function (resolve, reject) {
+      getresCallback(manifest, function (err, res) {
+        if (err) {
+          return reject(err)
+        }
+        return resolve(res)
+      })
+    })
+  } else {
+    throw new Error('Promises are not supported in this environment')
+  }
 }
 
-},{}],3:[function(require,module,exports){
+function getres (manifest, cb) {
+  var fn = cb ? getresCallback : getresPromises
+  return fn(manifest, cb)
+}
+
+module.exports = getres
+
+},{"./loaders/http":2,"./loaders/image":3,"./loaders/invalid-type":4,"./loaders/json":5}],2:[function(require,module,exports){
 var request = require('superagent')
 
 module.exports = function loadHttp (entry, cb) {
@@ -82,7 +106,19 @@ module.exports = function loadHttp (entry, cb) {
     })
 }
 
-},{"superagent":7}],4:[function(require,module,exports){
+},{"superagent":7}],3:[function(require,module,exports){
+module.exports = function loadImage (entry, cb) {
+  var image = new window.Image()
+  image.onload = function () {
+    cb(null, image)
+  }
+  image.onerror = function (err) {
+    cb(err)
+  }
+  image.src = entry.src
+}
+
+},{}],4:[function(require,module,exports){
 module.exports = function loadInvalidType (entry, cb) {
   cb(new Error('Invalid manifest type: ' + entry.type), {})
 }
@@ -103,7 +139,7 @@ module.exports = function loadJson (entry, cb) {
   })
 }
 
-},{"./http":3}],6:[function(require,module,exports){
+},{"./http":2}],6:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.

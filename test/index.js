@@ -1,6 +1,6 @@
-var test = require('ava')
-var proxyquire = require('proxyquire')
-var images = require('./fixtures/images')
+const test = require('ava')
+const proxyquire = require('proxyquire')
+const images = require('./fixtures/images')
 
 function mockSuperagent (reqs) {
   return {
@@ -9,7 +9,7 @@ function mockSuperagent (reqs) {
       return this
     },
     end: function (cb) {
-      var req = reqs[this.url]
+      const req = reqs[this.url]
       if (req.err) {
         cb(req.err)
       } else {
@@ -39,7 +39,7 @@ function createGetres (reqs) {
 }
 
 test.cb('get text', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' }
   })
@@ -48,7 +48,7 @@ test.cb('get text', (t) => {
       foo: { src: '/foo.txt' },
       bar: { src: '/bar.txt', type: 'text' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, null)
       t.is(res.foo, 'Foo')
       t.is(res.bar, 'Bar')
@@ -58,14 +58,14 @@ test.cb('get text', (t) => {
 })
 
 test.cb('get json', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/zoe.json': { body: '{ "hello": "world!" }' }
   })
   getres(
     {
       zoe: { src: '/zoe.json', type: 'json' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, null)
       t.deepEqual(res.zoe, { hello: 'world!' })
       t.end()
@@ -74,14 +74,14 @@ test.cb('get json', (t) => {
 })
 
 test.cb('handle json decode error', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/invalid.json': { body: '{ "hello: "world!" }' }
   })
   getres(
     {
       zoe: { src: '/invalid.json', type: 'json' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err.name, 'SyntaxError')
       t.end()
     }
@@ -89,14 +89,14 @@ test.cb('handle json decode error', (t) => {
 })
 
 test.cb('get png image', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/img.png': { body: images.png.input }
   })
   getres(
     {
       img: { src: '/img.png', type: 'image' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, null)
       t.deepEqual(res.img, images.png.expect)
       t.end()
@@ -105,14 +105,14 @@ test.cb('get png image', (t) => {
 })
 
 test.cb('get gif image', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/img.gif': { body: images.gif.input }
   })
   getres(
     {
       img: { src: '/img.gif', type: 'image' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, null)
       t.deepEqual(res.img, images.gif.expect)
       t.end()
@@ -121,7 +121,7 @@ test.cb('get gif image', (t) => {
 })
 
 test.cb('get jpg image', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/img1.jpg': { body: images.jpg.input },
     '/img2.jpeg': { body: images.jpg.input }
   })
@@ -130,7 +130,7 @@ test.cb('get jpg image', (t) => {
       img1: { src: '/img1.jpg', type: 'image' },
       img2: { src: '/img2.jpeg', type: 'image' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, null)
       t.deepEqual(res.img1, images.jpg.expect)
       t.deepEqual(res.img2, images.jpg.expect)
@@ -140,14 +140,14 @@ test.cb('get jpg image', (t) => {
 })
 
 test.cb('handle corrupt png image error', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/corrupt.png': { body: images.corruptPng.input }
   })
   getres(
     {
       img: { src: '/corrupt.png', type: 'image' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err.message, 'Invalid PNG buffer')
       t.end()
     }
@@ -155,7 +155,7 @@ test.cb('handle corrupt png image error', (t) => {
 })
 
 test.cb('handle manifest type error', (t) => {
-  var getres = createGetres({
+  const getres = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' }
   })
@@ -164,7 +164,7 @@ test.cb('handle manifest type error', (t) => {
       foo: { src: '/foo.txt' },
       bar: { src: '/bar.txt', type: 'invalid' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err.message, 'Invalid manifest type: invalid')
       t.deepEqual(res, {})
       t.end()
@@ -173,8 +173,8 @@ test.cb('handle manifest type error', (t) => {
 })
 
 test.cb('handle http errors', (t) => {
-  var mockErr = { Error: 'Not Found' }
-  var getres = createGetres({
+  const mockErr = { Error: 'Not Found' }
+  const getres = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
   })
@@ -183,7 +183,7 @@ test.cb('handle http errors', (t) => {
       foo: { src: '/foo.txt' },
       bar: { src: '/bar.txt' }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, mockErr)
       t.deepEqual(res, {})
       t.end()
@@ -192,17 +192,17 @@ test.cb('handle http errors', (t) => {
 })
 
 test.cb('use parser function', (t) => {
-  var getres = createGetres({ '/world.txt': { body: 'hello world' } })
+  const getres = createGetres({ '/world.txt': { body: 'hello world' } })
   getres(
     {
       hello: {
         src: '/world.txt',
-        parser: function (resource) {
-          return resource.toUpperCase()
+        parser: function (resource, cb) {
+          cb(null, resource.toUpperCase())
         }
       }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, null)
       t.is(res.hello, 'HELLO WORLD')
       t.end()
@@ -211,20 +211,50 @@ test.cb('use parser function', (t) => {
 })
 
 test.cb('handle parser error', (t) => {
-  var getres = createGetres({ '/world.txt': { body: 'hello world' } })
-  var expectErr = new Error('Parse this!')
+  const getres = createGetres({ '/world.txt': { body: 'hello world' } })
+  const expectErr = new Error('Parse this!')
   getres(
     {
       hello: {
         src: '/world.txt',
-        parser: function (resource) {
-          throw expectErr
+        parser: function (resource, cb) {
+          cb(expectErr)
         }
       }
     },
-    function (err, res) {
+    (err, res) => {
       t.is(err, expectErr)
       t.end()
     }
   )
 })
+
+test('get text promise', (t) => {
+  const getres = createGetres({
+    '/foo.txt': { body: 'Foo' }
+  })
+  return getres({ foo: { src: '/foo.txt' } })
+    .then((res) => {
+      t.is(res.foo, 'Foo')
+    })
+})
+
+test('handle http error promise', (t) => {
+  const mockErr = { Error: 'Not Found' }
+  const getres = createGetres({
+    '/foo.txt': { err: mockErr },
+    '/bar.txt': { body: 'Foo' }
+  })
+  return getres(
+    {
+      foo: { src: '/foo.txt' },
+      bar: { src: '/bar.txt' }
+    })
+    .catch((err) => {
+      t.is(err, mockErr)
+    })
+})
+
+test.todo('progress')
+test.todo('per resource callbacks')
+test.todo('abort outstanding requests on error')
