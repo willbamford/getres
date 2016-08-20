@@ -20,7 +20,7 @@ function mockSuperagent (reqs) {
 }
 
 function createGetres (reqs) {
-  // Well, this is all a bit bonkers...
+  // TODO: mock processors and add unit tests around processors instead
   return proxyquire('../lib', {
     './processors/http': proxyquire('../lib/processors/http', {
       'superagent': mockSuperagent(reqs)
