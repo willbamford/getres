@@ -27,10 +27,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WebSeed/universal-asset-loader.git"
+    "url": "git+https://github.com/WebSeed/getres.git"
   },
   "keywords": [
-    "universal-asset-loader",
+    "getres",
     "node",
     "browser",
     "asset",
@@ -46,9 +46,9 @@
   "author": "Will Bamford",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/WebSeed/universal-asset-loader/issues"
+    "url": "https://github.com/WebSeed/getres/issues"
   },
-  "homepage": "https://github.com/WebSeed/universal-asset-loader#readme",
+  "homepage": "https://github.com/WebSeed/getres#readme",
   "devDependencies": {
     "ava": "^0.16.0",
     "browserify": "^13.1.0",
