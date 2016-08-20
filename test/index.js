@@ -20,8 +20,21 @@ function mockSuperagent (reqs) {
 }
 
 function createGetres (reqs) {
+  // Well, this is all a bit bonkers...
   return proxyquire('../lib', {
-    superagent: mockSuperagent(reqs)
+    './processors/http': proxyquire('../lib/processors/http', {
+      'superagent': mockSuperagent(reqs)
+    }),
+    './processors/image': proxyquire('../lib/processors/image', {
+      './http': proxyquire('../lib/processors/http', {
+        'superagent': mockSuperagent(reqs)
+      })
+    }),
+    './processors/json': proxyquire('../lib/processors/json', {
+      './http': proxyquire('../lib/processors/http', {
+        'superagent': mockSuperagent(reqs)
+      })
+    })
   })
 }
 
