@@ -63,7 +63,14 @@ function processHttp (entry, cb) {
 
 function processJson (entry, cb) {
   processHttp(entry, function (err, resource) {
-    cb(err, JSON.parse(resource))
+    if (err) {
+      return cb(err)
+    }
+    try {
+      return cb(err, JSON.parse(resource))
+    } catch (e) {
+      return cb(e)
+    }
   })
 }
 

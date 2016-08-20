@@ -60,6 +60,21 @@ test.cb('get json', (t) => {
   )
 })
 
+test.cb('handle json decode error', (t) => {
+  var getres = createGetres({
+    '/invalid.json': { body: '{ "hello: "world!" }' }
+  })
+  getres(
+    {
+      zoe: { src: '/invalid.json', type: 'json' }
+    },
+    function (err, res) {
+      t.is(err.name, 'SyntaxError')
+      t.end()
+    }
+  )
+})
+
 test.cb('get png image', (t) => {
   var getres = createGetres({
     '/img.png': { body: images.png.input }
@@ -111,7 +126,7 @@ test.cb('get jpg image', (t) => {
   )
 })
 
-test.cb('corrupt png image error', (t) => {
+test.cb('handle corrupt png image error', (t) => {
   var getres = createGetres({
     '/corrupt.png': { body: images.corruptPng.input }
   })
@@ -182,7 +197,7 @@ test.cb('use parser function', (t) => {
   )
 })
 
-test.cb('parser error', (t) => {
+test.cb('handle parser error', (t) => {
   var getres = createGetres({ '/world.txt': { body: 'hello world' } })
   var expectErr = new Error('Parse this!')
   getres(
