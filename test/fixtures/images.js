@@ -38,5 +38,8 @@ module.exports = {
   jpg: {
     input: load('img.jpg'),
     expect: expectJpeg
+  },
+  corruptPng: {
+    input: load('corrupt.png')
   }
 }

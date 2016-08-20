@@ -1,6 +1,6 @@
 var test = require('ava')
 var proxyquire = require('proxyquire')
-var imageStubs = require('./fixtures/images')
+var images = require('./fixtures/images')
 
 function mockSuperagent (reqs) {
   return {
@@ -62,7 +62,7 @@ test.cb('get json', (t) => {
 
 test.cb('get png image', (t) => {
   var getres = createGetres({
-    '/img.png': { body: imageStubs.png.input }
+    '/img.png': { body: images.png.input }
   })
   getres(
     {
@@ -70,7 +70,7 @@ test.cb('get png image', (t) => {
     },
     function (err, res) {
       t.is(err, null)
-      t.deepEqual(res.img, imageStubs.png.expect)
+      t.deepEqual(res.img, images.png.expect)
       t.end()
     }
   )
@@ -78,7 +78,7 @@ test.cb('get png image', (t) => {
 
 test.cb('get gif image', (t) => {
   var getres = createGetres({
-    '/img.gif': { body: imageStubs.gif.input }
+    '/img.gif': { body: images.gif.input }
   })
   getres(
     {
@@ -86,7 +86,7 @@ test.cb('get gif image', (t) => {
     },
     function (err, res) {
       t.is(err, null)
-      t.deepEqual(res.img, imageStubs.gif.expect)
+      t.deepEqual(res.img, images.gif.expect)
       t.end()
     }
   )
@@ -94,8 +94,8 @@ test.cb('get gif image', (t) => {
 
 test.cb('get jpg image', (t) => {
   var getres = createGetres({
-    '/img1.jpg': { body: imageStubs.jpg.input },
-    '/img2.jpeg': { body: imageStubs.jpg.input }
+    '/img1.jpg': { body: images.jpg.input },
+    '/img2.jpeg': { body: images.jpg.input }
   })
   getres(
     {
@@ -104,14 +104,27 @@ test.cb('get jpg image', (t) => {
     },
     function (err, res) {
       t.is(err, null)
-      t.deepEqual(res.img1, imageStubs.jpg.expect)
-      t.deepEqual(res.img2, imageStubs.jpg.expect)
+      t.deepEqual(res.img1, images.jpg.expect)
+      t.deepEqual(res.img2, images.jpg.expect)
       t.end()
     }
   )
 })
 
-test.todo('image errors')
+test.cb('corrupt png image error', (t) => {
+  var getres = createGetres({
+    '/corrupt.png': { body: images.corruptPng.input }
+  })
+  getres(
+    {
+      img: { src: '/corrupt.png', type: 'image' }
+    },
+    function (err, res) {
+      t.is(err.message, 'Invalid PNG buffer')
+      t.end()
+    }
+  )
+})
 
 test.cb('handle manifest type error', (t) => {
   var getres = createGetres({
@@ -169,4 +182,21 @@ test.cb('use parser function', (t) => {
   )
 })
 
-test.todo('parser error')
+test.cb('parser error', (t) => {
+  var getres = createGetres({ '/world.txt': { body: 'hello world' } })
+  var expectErr = new Error('Parse this!')
+  getres(
+    {
+      hello: {
+        src: '/world.txt',
+        parser: function (resource) {
+          throw expectErr
+        }
+      }
+    },
+    function (err, res) {
+      t.is(err, expectErr)
+      t.end()
+    }
+  )
+})
