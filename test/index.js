@@ -20,18 +20,18 @@ function mockSuperagent (reqs) {
 }
 
 function createGetres (reqs) {
-  // TODO: mock processors and add unit tests around processors instead
+  // TODO: mock loaders and add unit tests around loaders instead
   return proxyquire('../lib', {
-    './processors/http': proxyquire('../lib/processors/http', {
+    './loaders/http': proxyquire('../lib/loaders/http', {
       'superagent': mockSuperagent(reqs)
     }),
-    './processors/image': proxyquire('../lib/processors/image', {
-      './http': proxyquire('../lib/processors/http', {
+    './loaders/image': proxyquire('../lib/loaders/image', {
+      './http': proxyquire('../lib/loaders/http', {
         'superagent': mockSuperagent(reqs)
       })
     }),
-    './processors/json': proxyquire('../lib/processors/json', {
-      './http': proxyquire('../lib/processors/http', {
+    './loaders/json': proxyquire('../lib/loaders/json', {
+      './http': proxyquire('../lib/loaders/http', {
         'superagent': mockSuperagent(reqs)
       })
     })
