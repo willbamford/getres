@@ -2,7 +2,7 @@
 
 Resource loading in the Browser and Node.js  (text, JSON, binary, images) designed to work with HTML Canvas and WebGL.
 
-Compatible with IE10+ and all other modern browsers (no requirement on Promises / ES6).
+Compatible with IE10+ and all other modern browsers (Promises optional)
 
 Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to fetch assets.
 
@@ -40,7 +40,7 @@ You must ensure the environment supports Promises. If you need to ensure support
 
 ### Using Callbacks
 
-If your environment doesn't support promises you can use good old fashioned callbacks:
+If your environment doesn't support Promises you can use good old fashioned callbacks:
 
 ```js
 import getres from 'getres';
