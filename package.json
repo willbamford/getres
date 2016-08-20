@@ -1,15 +1,18 @@
 {
   "name": "getres",
-  "version": "1.0.0",
-  "description": "Universal Asset Loader for the Browser and Node.js",
+  "version": "0.1.0",
+  "description": "Universal Resource Loader for the Browser and Node.js",
   "main": "lib/index.js",
   "scripts": {
     "build": "browserify lib/index.js -s getres -o dist/getres.js",
-    "build:min": "browserify lib/index.js -s getres | uglifyjs -c > dist/getres.min.js",
+    "min": "browserify lib/index.js -s getres | uglifyjs -c > dist/getres.min.js",
     "watch": "watchify lib/index.js -s getres -o dist/getres.js",
     "lint": "standard",
     "unit": "ava -v",
     "test": "standard && ava -v"
+  },
+  "browser": {
+    "./lib/loaders/image": "./lib/loaders/browser-image"
   },
   "ava": {
     "files": [
