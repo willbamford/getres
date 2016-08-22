@@ -10,6 +10,8 @@ Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes t
 
 ### Using Promises
 
+You must ensure the environment supports Promises. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill)).
+
 ```js
 import getres from 'getres'
 
@@ -36,8 +38,6 @@ getres({
 })
 ```
 
-You must ensure the environment supports Promises. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill)).
-
 ### Using Callbacks
 
 If your environment doesn't support Promises you can use good old fashioned callbacks:
@@ -58,6 +58,10 @@ getres({
   }
 })
 ```
+
+### Nested manifest
+
+TODO
 
 ## Credits
 
