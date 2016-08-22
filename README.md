@@ -16,7 +16,7 @@ TODO...
 
 ### Using Promises
 
-To use Promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill)).
+To use Promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill).
 
 ```js
 import getres from 'getres'
