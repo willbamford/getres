@@ -8,9 +8,11 @@ Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes t
 
 Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.
 
-## API
+## Install
 
-TODO...
+```bash
+npm i getres -S
+```
 
 ## Examples
 
@@ -27,6 +29,7 @@ getres({
   },
   parsedText: {
     src: 'http://example.com/my.txt',
+    type: 'text',
     parser: (resource, cb) => cb(null, resource.toUpperCase());
   },
   json: {
