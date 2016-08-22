@@ -21,6 +21,10 @@ function mockSuperagent (reqs) {
   }
 }
 
+function beginsWith (needle, haystack) {
+  return haystack.substr(0, needle.length) === needle
+}
+
 function createGetres (reqs) {
   // TODO: mock loaders and add unit tests around loaders instead
   return proxyquire('../lib', {
@@ -121,7 +125,6 @@ test.cb('get nested', (t) => {
       }
     },
     (err, res) => {
-      console.log(err)
       t.is(err, null)
       t.is(res.a, 'this is a')
       t.is(res.p.b, 'THIS IS B')
@@ -157,7 +160,7 @@ test.cb('handle json decode error', (t) => {
       zoe: { src: '/invalid.json', type: 'json' }
     },
     (err, res) => {
-      t.is(err.name, 'SyntaxError')
+      t.true(beginsWith('Job error /invalid.json.', err.message))
       t.end()
     }
   )
@@ -223,7 +226,7 @@ test.cb('handle corrupt png image error', (t) => {
       img: { src: '/corrupt.png', type: 'image' }
     },
     (err, res) => {
-      t.is(err.message, 'Invalid PNG buffer')
+      t.is(err.message, 'Job error /corrupt.png. Invalid PNG buffer')
       t.end()
     }
   )
@@ -240,7 +243,7 @@ test.cb('handle manifest type error', (t) => {
       bar: { src: '/bar.txt', type: 'invalid' }
     },
     (err, res) => {
-      t.is(err.message, 'Invalid manifest type: invalid')
+      t.is(err.message, 'Job error /bar.txt. Invalid manifest type: invalid')
       t.deepEqual(res, {})
       t.end()
     }
@@ -248,7 +251,7 @@ test.cb('handle manifest type error', (t) => {
 })
 
 test.cb('handle http errors', (t) => {
-  const mockErr = { Error: 'Not Found' }
+  const mockErr = { message: 'Not Found' }
   const getres = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
@@ -259,7 +262,7 @@ test.cb('handle http errors', (t) => {
       bar: { src: '/bar.txt' }
     },
     (err, res) => {
-      t.is(err, mockErr)
+      t.is(err.message, 'Job error /foo.txt. Not Found')
       t.deepEqual(res, {})
       t.end()
     }
@@ -298,7 +301,7 @@ test.cb('handle parser error', (t) => {
       }
     },
     (err, res) => {
-      t.is(err, expectErr)
+      t.is(err.message, 'Job error /world.txt. Parse this!')
       t.end()
     }
   )
@@ -315,7 +318,7 @@ test('get text promise', (t) => {
 })
 
 test('handle http error promise', (t) => {
-  const mockErr = { Error: 'Not Found' }
+  const mockErr = { message: 'Not Found' }
   const getres = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
@@ -326,7 +329,7 @@ test('handle http error promise', (t) => {
       bar: { src: '/bar.txt' }
     })
     .catch((err) => {
-      t.is(err, mockErr)
+      t.is(err.message, 'Job error /foo.txt. Not Found')
     })
 })
 

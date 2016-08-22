@@ -4,12 +4,14 @@ module.exports = function () {
   return {
     add: function (job) {
       jobs.push(job)
+      return this
     },
     remove: function (job) {
       var n = jobs.indexOf(job)
       if (n !== -1) {
         jobs.splice(n, 1)
       }
+      return this
     },
     count: function () {
       return jobs.length
@@ -19,6 +21,10 @@ module.exports = function () {
     },
     all: function () {
       return jobs
+    },
+    each: function (fn) {
+      jobs.forEach(fn)
+      return this
     }
   }
 }
@@ -53,92 +59,109 @@ var identityParser = function (resource, cb) {
   return cb(null, resource)
 }
 
-function enqueue (jobs, src, node, cb) {
+function enqueue (jobs, src, node, onDone) {
   node = node || {}
   var job = {
     src: src,
     type: node.type || 'text',
-    parser: node.parser || identityParser
+    parser: node.parser || identityParser,
+    onDone: onDone
   }
   jobs.add(job)
-  var loader = loaders[job.type] || loaders.invalidType
-  loader(job, function (err, resource) {
-    if (err) {
-      return cb(err)
-    }
-    job.parser(resource, function (err, resource) {
-      jobs.remove(job)
-      if (err) {
-        return cb(err)
-      }
-      return cb(null, resource)
-    })
-  })
 }
 
-function processNode (node, name, jobs, tree, cb) {
+function processNode (node, name, jobs, resources) {
+  name = name || null
+  resources = resources || {}
+  jobs = jobs || createJobs()
+  var isRoot = !name
+
   if (!isObject(node)) {
-    console.log('node', node)
-    return cb(new Error('Invalid node'))
+    throw new Error('Invalid node')
   } else if (node.src) {
     if (isString(node.src)) {
-      enqueue(jobs, node.src, node, function (err, resource) {
-        tree[name] = resource
-        cb(err, resource)
+      enqueue(jobs, node.src, node, function (resource) {
+        resources[name] = resource
       })
     } else if (isArray(node.src)) {
-      tree[name] = []
+      resources[name] = []
       node.src.forEach(function (src) {
-        enqueue(jobs, src, node, function (err, resource) {
-          tree[name].push(resource)
-          cb(err, resource)
+        enqueue(jobs, src, node, function (resource) {
+          resources[name].push(resource)
         })
       })
     } else if (isObject(node.src)) {
-      tree[name] = {}
+      resources[name] = {}
       Object.keys(node.src).forEach(function (childName) {
-        enqueue(jobs, node.src[childName], node, function (err, resource) {
-          tree[name][childName] = resource
-          cb(err, resource)
+        enqueue(jobs, node.src[childName], node, function (resource) {
+          resources[name][childName] = resource
         })
       })
     }
   } else {
-    var subtree = tree
-    if (name) {
-      tree[name] = {}
-      subtree = tree[name]
+    var subtree = resources
+    if (!isRoot) {
+      resources[name] = {}
+      subtree = resources[name]
     }
     Object.keys(node).forEach(function (childName) {
-      processNode(node[childName], childName, jobs, subtree, cb)
+      processNode(node[childName], childName, jobs, subtree)
     })
+  }
+  if (isRoot) {
+    return {
+      jobs: jobs,
+      resources: resources
+    }
   }
 }
 
-function getresCallback (manifest, cb) {
-  var name = null
-  var res = {}
-  var jobs = createJobs()
-  var runError
+function processJobs (jobs, cb) {
+  jobs.each(
+    function processJob (job) {
+      var loader = loaders[job.type] || loaders.invalidType
+      loader(job, function (err, resource) {
+        if (err) {
+          return cb(err, job)
+        }
+        job.parser(resource, function (err, resource) {
+          if (err) {
+            return cb(err, job)
+          }
+          job.onDone(resource)
+          cb(null, job)
+        })
+      })
+    }
+  )
+}
 
-  function error (err) {
+function getresCallback (manifest, cb) {
+  var runError
+  var results = processNode(manifest)
+  var jobs = results.jobs
+  var resources = results.resources
+
+  function onError (err) {
     cb(err, {})
   }
 
-  function done (res) {
-    cb(null, res)
+  function onDone () {
+    cb(null, resources)
   }
 
-  processNode(manifest, name, jobs, res, function (err, resource) {
+  function onJobDone (err, job) {
+    jobs.remove(job)
     if (err) {
-      runError = err
-      error(err)
+      runError = new Error('Job error ' + job.src + '. ' + err.message)
+      return onError(runError)
     }
-
     if (jobs.empty() && !runError) {
-      done(res)
+      return onDone()
     }
-  })
+  }
+
+  processJobs(jobs, onJobDone)
 }
 
 function getresPromises (manifest, cb) {
