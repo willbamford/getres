@@ -9,12 +9,14 @@ function mockSuperagent (reqs) {
       return this
     },
     end: function (cb) {
-      const req = reqs[this.url]
-      if (req.err) {
-        cb(req.err)
-      } else {
-        cb(null, { body: req.body })
-      }
+      var req = reqs[this.url]
+      setTimeout(() => {
+        if (req.err) {
+          cb(req.err)
+        } else {
+          cb(null, { body: req.body })
+        }
+      }, 0)
     }
   }
 }

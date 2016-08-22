@@ -5,10 +5,11 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "browserify lib/index.js -s getres -o dist/getres.js",
-    "min": "browserify lib/index.js -s getres | uglifyjs -c > dist/getres.min.js",
+    "build:min": "browserify lib/index.js -s getres | uglifyjs -c > dist/getres.min.js",
     "watch": "watchify lib/index.js -s getres -o dist/getres.js",
     "lint": "standard",
     "unit": "ava -v",
+    "unit:watch": "ava -w -v",
     "test": "standard && ava -v -T 10s"
   },
   "browser": {
