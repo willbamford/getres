@@ -59,6 +59,79 @@ test.cb('get text', (t) => {
   )
 })
 
+test.cb('get array src', (t) => {
+  const getres = createGetres({
+    '/foo.txt': { body: 'Foo' },
+    '/bar.txt': { body: 'Bar' }
+  })
+  getres(
+    {
+      arr: { src: [ '/foo.txt', '/bar.txt' ] }
+    },
+    (err, res) => {
+      t.is(err, null)
+      t.is(res.arr[0], 'Foo')
+      t.is(res.arr[1], 'Bar')
+      t.end()
+    }
+  )
+})
+
+test.cb('get object src', (t) => {
+  const getres = createGetres({
+    '/a.txt': { body: 'A' },
+    '/b.txt': { body: 'B' }
+  })
+  getres(
+    {
+      root: {
+        src: {
+          a: '/a.txt',
+          b: '/b.txt'
+        }
+      }
+    },
+    (err, res) => {
+      t.is(err, null)
+      t.is(res.root.a, 'A')
+      t.is(res.root.b, 'B')
+      t.end()
+    }
+  )
+})
+
+test.cb('get nested', (t) => {
+  const getres = createGetres({
+    '/a.txt': { body: 'this is a' },
+    '/b.txt': { body: 'this is b' }
+  })
+  getres(
+    {
+      a: {
+        src: '/a.txt'
+      },
+      p: {
+        b: {
+          src: '/b.txt',
+          type: 'text',
+          parser: (resource, cb) => {
+            cb(null, resource.toUpperCase())
+          }
+        }
+      }
+    },
+    (err, res) => {
+      console.log(err)
+      t.is(err, null)
+      t.is(res.a, 'this is a')
+      t.is(res.p.b, 'THIS IS B')
+      t.end()
+    }
+  )
+})
+
+test.todo('error should reference manifest node that is to blame')
+
 test.cb('get json', (t) => {
   const getres = createGetres({
     '/zoe.json': { body: '{ "hello": "world!" }' }
@@ -199,7 +272,7 @@ test.cb('use parser function', (t) => {
     {
       hello: {
         src: '/world.txt',
-        parser: function (resource, cb) {
+        parser: (resource, cb) => {
           cb(null, resource.toUpperCase())
         }
       }
@@ -219,7 +292,7 @@ test.cb('handle parser error', (t) => {
     {
       hello: {
         src: '/world.txt',
-        parser: function (resource, cb) {
+        parser: (resource, cb) => {
           cb(expectErr)
         }
       }
