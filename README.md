@@ -44,7 +44,7 @@ getres({
 })
 ```
 
-### Using Callbacks
+### Using callbacks
 
 If your environment doesn't support promises you can use good old fashioned callbacks:
 
@@ -55,12 +55,12 @@ getres({
   text: {
     src: 'http://example.com/my.txt'
   },
-  (err, resources) => {
+  (err, { text }) => {
     if (err) {
       console.error(err)
       return
     }
-    /* Do something with resources */
+    console.log('text', text)
   }
 })
 ```
