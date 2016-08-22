@@ -72,8 +72,6 @@ function enqueue (jobs, src, node, onDone) {
 
 function processNode (node, name, jobs, resources) {
   name = name || null
-  resources = resources || {}
-  jobs = jobs || createJobs()
   var isRoot = !name
 
   if (!isObject(node)) {
@@ -108,12 +106,6 @@ function processNode (node, name, jobs, resources) {
       processNode(node[childName], childName, jobs, subtree)
     })
   }
-  if (isRoot) {
-    return {
-      jobs: jobs,
-      resources: resources
-    }
-  }
 }
 
 function processJobs (jobs, cb) {
@@ -138,9 +130,9 @@ function processJobs (jobs, cb) {
 
 function getresCallback (manifest, cb) {
   var runError
-  var results = processNode(manifest)
-  var jobs = results.jobs
-  var resources = results.resources
+  var jobs = createJobs()
+  var resources = {}
+  processNode(manifest, null, jobs, resources)
 
   function onError (err) {
     cb(err, {})
