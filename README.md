@@ -40,7 +40,7 @@ getres({
 }).then(({ text, parsedText, json, image }) => {
   /* Do something with resources */
 }).catch((err) => {
-  console.err(err)
+  console.error(err)
 })
 ```
 
@@ -93,7 +93,7 @@ getres({
     cube[0], cube[1], cube[2], cube[3], cube[4], cubemap[5]
   )
 }).catch((err) => {
-  console.err(err)
+  console.error(err)
 })
 ```
 
@@ -125,7 +125,7 @@ getres({
     cube.xp, cube.xn, cube.yp, cube.yn, cube.yp, cube.yn
   )
 }).catch((err) => {
-  console.err(err)
+  console.error(err)
 })
 ```
 
@@ -151,7 +151,7 @@ getres({
   console.log('images.alpha', images.alpha)
   console.log('images.beta', images.beta)
 }).catch((err) => {
-  console.err(err)
+  console.error(err)
 })
 ```
 
