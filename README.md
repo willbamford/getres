@@ -2,7 +2,7 @@
 
 Resource loading in the browser and Node.js  (text, JSON, binary, images) designed to work with HTML5 Canvas and WebGL.
 
-Compatible with IE10+ and all other modern browsers (*promise* support optional)
+Compatible with IE9+ and all other modern browsers (*promise* support optional)
 
 Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to fetch assets.
 
