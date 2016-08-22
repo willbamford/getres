@@ -1,4 +1,30 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.getres = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports = function () {
+  var jobs = []
+  return {
+    add: function (job) {
+      jobs.push(job)
+    },
+    remove: function (job) {
+      var n = jobs.indexOf(job)
+      if (n !== -1) {
+        jobs.splice(n, 1)
+      }
+    },
+    count: function () {
+      return jobs.length
+    },
+    empty: function () {
+      return jobs.length === 0
+    },
+    all: function () {
+      return jobs
+    }
+  }
+}
+
+},{}],2:[function(require,module,exports){
+var createJobs = require('./create-jobs')
 var loadHttp = require('./loaders/http')
 var loadImage = require('./loaders/image')
 var loadJson = require('./loaders/json')
@@ -27,17 +53,6 @@ var identityParser = function (resource, cb) {
   return cb(null, resource)
 }
 
-function addJob (jobs, job) {
-  jobs.push(job)
-}
-
-function removeJob (jobs, job) {
-  var n = jobs.indexOf(job)
-  if (n !== -1) {
-    jobs.splice(n, 1)
-  }
-}
-
 function enqueue (jobs, src, node, cb) {
   node = node || {}
   var job = {
@@ -45,14 +60,14 @@ function enqueue (jobs, src, node, cb) {
     type: node.type || 'text',
     parser: node.parser || identityParser
   }
-  addJob(jobs, job)
+  jobs.add(job)
   var loader = loaders[job.type] || loaders.invalidType
   loader(job, function (err, resource) {
     if (err) {
       return cb(err)
     }
     job.parser(resource, function (err, resource) {
-      removeJob(jobs, job)
+      jobs.remove(job)
       if (err) {
         return cb(err)
       }
@@ -103,7 +118,7 @@ function processNode (node, name, jobs, tree, cb) {
 function getresCallback (manifest, cb) {
   var name = null
   var res = {}
-  var jobs = []
+  var jobs = createJobs()
   var runError
 
   function error (err) {
@@ -120,7 +135,7 @@ function getresCallback (manifest, cb) {
       error(err)
     }
 
-    if (!jobs.length && !runError) {
+    if (jobs.empty() && !runError) {
       done(res)
     }
   })
@@ -148,7 +163,7 @@ function getres (manifest, cb) {
 
 module.exports = getres
 
-},{"./loaders/http":2,"./loaders/image":3,"./loaders/invalid-type":4,"./loaders/json":5}],2:[function(require,module,exports){
+},{"./create-jobs":1,"./loaders/http":3,"./loaders/image":4,"./loaders/invalid-type":5,"./loaders/json":6}],3:[function(require,module,exports){
 var request = require('superagent')
 
 module.exports = function loadHttp (entry, cb) {
@@ -159,7 +174,7 @@ module.exports = function loadHttp (entry, cb) {
     })
 }
 
-},{"superagent":7}],3:[function(require,module,exports){
+},{"superagent":8}],4:[function(require,module,exports){
 module.exports = function loadImage (entry, cb) {
   var image = new window.Image()
   image.onload = function () {
@@ -171,12 +186,12 @@ module.exports = function loadImage (entry, cb) {
   image.src = entry.src
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = function loadInvalidType (entry, cb) {
   cb(new Error('Invalid manifest type: ' + entry.type), {})
 }
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var loadHttp = require('./http')
 
 module.exports = function loadJson (entry, cb) {
@@ -192,7 +207,7 @@ module.exports = function loadJson (entry, cb) {
   })
 }
 
-},{"./http":2}],6:[function(require,module,exports){
+},{"./http":3}],7:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -357,7 +372,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  * Root reference for iframes.
  */
@@ -1335,7 +1350,7 @@ request.put = function(url, data, fn){
   return req;
 };
 
-},{"./is-object":8,"./request":10,"./request-base":9,"emitter":6}],8:[function(require,module,exports){
+},{"./is-object":9,"./request":11,"./request-base":10,"emitter":7}],9:[function(require,module,exports){
 /**
  * Check if `obj` is an object.
  *
@@ -1350,7 +1365,7 @@ function isObject(obj) {
 
 module.exports = isObject;
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  * Module of mixed-in functions shared between node and client code
  */
@@ -1699,7 +1714,7 @@ exports.send = function(data){
   return this;
 };
 
-},{"./is-object":8}],10:[function(require,module,exports){
+},{"./is-object":9}],11:[function(require,module,exports){
 // The node and browser modules expose versions of this with the
 // appropriate constructor function bound as first argument
 /**
@@ -1733,5 +1748,5 @@ function request(RequestConstructor, method, url) {
 
 module.exports = request;
 
-},{}]},{},[1])(1)
+},{}]},{},[2])(2)
 });
