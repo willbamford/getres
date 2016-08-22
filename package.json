@@ -10,7 +10,8 @@
     "lint": "standard",
     "unit": "ava -v",
     "unit:watch": "ava -w -v",
-    "test": "standard && ava -v -T 10s"
+    "test": "standard && ava -v",
+    "coverage": "nyc ava"
   },
   "browser": {
     "./lib/loaders/image": "./lib/loaders/image-browser"
@@ -54,6 +55,7 @@
     "ava": "^0.16.0",
     "browserify": "^13.1.0",
     "express": "^4.14.0",
+    "nyc": "^8.1.0",
     "proxyquire": "^1.7.10",
     "sinon": "^1.17.5",
     "standard": "^7.1.2",
