@@ -48,125 +48,63 @@ function createJob (src, node, notifyDone) {
 module.exports = createJob
 
 },{"./loaders/http":4,"./loaders/image":5,"./loaders/invalid-type":6,"./loaders/json":7}],2:[function(require,module,exports){
+var createJob = require('./create-job')
+
 function createJobs () {
   var jobs = []
 
+  function add (job) {
+    jobs.push(job)
+  }
+
+  function remove (job) {
+    var n = jobs.indexOf(job)
+    if (n !== -1) {
+      jobs.splice(n, 1)
+    }
+  }
+
+  function empty () {
+    return jobs.length === 0
+  }
+
   return {
-    add: function (job) {
-      jobs.push(job)
-      return this
+    enqueue: function (src, node, cb) {
+      add(createJob(src, node, cb))
     },
-    remove: function (job) {
-      var n = jobs.indexOf(job)
-      if (n !== -1) {
-        jobs.splice(n, 1)
+    process: function (cb) {
+      var runError
+
+      function onJobDone (err, job) {
+        remove(job)
+        if (err) {
+          runError = new Error('Job error ' + job.src + '. ' + err.message)
+          return cb(runError)
+        }
+        if (empty() && !runError) {
+          return cb(null)
+        }
       }
-      return this
-    },
-    count: function () {
-      return jobs.length
-    },
-    empty: function () {
-      return jobs.length === 0
-    },
-    all: function () {
-      return jobs
-    },
-    each: function (fn) {
-      jobs.forEach(fn)
-      return this
+
+      jobs.forEach(function (job) {
+        job.process(onJobDone)
+      })
     }
   }
 }
 
 module.exports = createJobs
 
-},{}],3:[function(require,module,exports){
-var createJob = require('./create-job')
-var createJobs = require('./create-jobs')
-
-function isArray (o) {
-  return Object.prototype.toString.call(o) === '[object Array]'
-}
-
-function isObject (o) {
-  return (typeof o === 'object') && (o !== null)
-}
-
-function isString (o) {
-  return (typeof o === 'string') || (o instanceof String)
-}
-
-function populateJobs (node, name, jobs, resources) {
-  name = name || null
-  var isRoot = !name
-
-  if (!isObject(node)) {
-    throw new Error('Invalid node')
-  } else if (node.src) {
-    if (isString(node.src)) {
-      jobs.add(createJob(node.src, node, function (resource) {
-        resources[name] = resource
-      }))
-    } else if (isArray(node.src)) {
-      resources[name] = []
-      node.src.forEach(function (src) {
-        jobs.add(createJob(src, node, function (resource) {
-          resources[name].push(resource)
-        }))
-      })
-    } else if (isObject(node.src)) {
-      resources[name] = {}
-      Object.keys(node.src).forEach(function (childName) {
-        jobs.add(createJob(node.src[childName], node, function (resource) {
-          resources[name][childName] = resource
-        }))
-      })
-    }
-  } else {
-    var subtree = resources
-    if (!isRoot) {
-      resources[name] = {}
-      subtree = resources[name]
-    }
-    Object.keys(node).forEach(function (childName) {
-      populateJobs(node[childName], childName, jobs, subtree)
-    })
-  }
-}
-
-function processJobs (jobs, cb) {
-  jobs.each(function (job) {
-    job.process(cb)
-  })
-}
+},{"./create-job":1}],3:[function(require,module,exports){
+var processManifest = require('./process-manifest')
 
 function getresCallback (manifest, cb) {
-  var runError
-  var jobs = createJobs()
-  var resources = {}
-  populateJobs(manifest, null, jobs, resources)
-
-  function onError (err) {
-    cb(err, {})
-  }
-
-  function onDone () {
-    cb(null, resources)
-  }
-
-  function onJobDone (err, job) {
-    jobs.remove(job)
-    if (err) {
-      runError = new Error('Job error ' + job.src + '. ' + err.message)
-      return onError(runError)
-    }
-    if (jobs.empty() && !runError) {
-      return onDone()
-    }
-  }
-
-  processJobs(jobs, onJobDone)
+  var results = processManifest(manifest)
+  var jobs = results.jobs
+  var resources = results.resources
+  jobs.process(function (err) {
+    cb(err, resources)
+  })
 }
 
 function getresPromises (manifest, cb) {
@@ -191,7 +129,7 @@ function getres (manifest, cb) {
 
 module.exports = getres
 
-},{"./create-job":1,"./create-jobs":2}],4:[function(require,module,exports){
+},{"./process-manifest":8}],4:[function(require,module,exports){
 var request = require('superagent')
 
 module.exports = function loadHttp (entry, cb) {
@@ -202,7 +140,7 @@ module.exports = function loadHttp (entry, cb) {
     })
 }
 
-},{"superagent":9}],5:[function(require,module,exports){
+},{"superagent":10}],5:[function(require,module,exports){
 module.exports = function loadImage (entry, cb) {
   var image = new window.Image()
   image.onload = function () {
@@ -236,6 +174,71 @@ module.exports = function loadJson (entry, cb) {
 }
 
 },{"./http":4}],8:[function(require,module,exports){
+var createJobs = require('./create-jobs')
+
+function isArray (o) {
+  return Object.prototype.toString.call(o) === '[object Array]'
+}
+
+function isObject (o) {
+  return (typeof o === 'object') && (o !== null)
+}
+
+function isString (o) {
+  return (typeof o === 'string') || (o instanceof String)
+}
+
+function processNode (node, name, jobs, resources) {
+  name = name || null
+  var isRoot = !name
+
+  if (!isObject(node)) {
+    throw new Error('Invalid node')
+  } else if (node.src) {
+    if (isString(node.src)) {
+      jobs.enqueue(node.src, node, function (resource) {
+        resources[name] = resource
+      })
+    } else if (isArray(node.src)) {
+      resources[name] = []
+      node.src.forEach(function (src) {
+        jobs.enqueue(src, node, function (resource) {
+          resources[name].push(resource)
+        })
+      })
+    } else if (isObject(node.src)) {
+      resources[name] = {}
+      Object.keys(node.src).forEach(function (childName) {
+        jobs.enqueue(node.src[childName], node, function (resource) {
+          resources[name][childName] = resource
+        })
+      })
+    }
+  } else {
+    var subtree = resources
+    if (!isRoot) {
+      resources[name] = {}
+      subtree = resources[name]
+    }
+    Object.keys(node).forEach(function (childName) {
+      processNode(node[childName], childName, jobs, subtree)
+    })
+  }
+}
+
+function processManifest (manifest) {
+  var jobs = createJobs()
+  var resources = {}
+  processNode(manifest, null, jobs, resources)
+  return {
+    jobs: jobs,
+    resources: resources
+  }
+}
+
+module.exports = processManifest
+
+},{"./create-jobs":2}],9:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -400,7 +403,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  * Root reference for iframes.
  */
@@ -1378,7 +1381,7 @@ request.put = function(url, data, fn){
   return req;
 };
 
-},{"./is-object":10,"./request":12,"./request-base":11,"emitter":8}],10:[function(require,module,exports){
+},{"./is-object":11,"./request":13,"./request-base":12,"emitter":9}],11:[function(require,module,exports){
 /**
  * Check if `obj` is an object.
  *
@@ -1393,7 +1396,7 @@ function isObject(obj) {
 
 module.exports = isObject;
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  * Module of mixed-in functions shared between node and client code
  */
@@ -1742,7 +1745,7 @@ exports.send = function(data){
   return this;
 };
 
-},{"./is-object":10}],12:[function(require,module,exports){
+},{"./is-object":11}],13:[function(require,module,exports){
 // The node and browser modules expose versions of this with the
 // appropriate constructor function bound as first argument
 /**
