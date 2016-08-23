@@ -28,17 +28,19 @@ function beginsWith (needle, haystack) {
 function createGetres (reqs) {
   // TODO: mock loaders and add unit tests around loaders instead
   return proxyquire('../lib', {
-    './loaders/http': proxyquire('../lib/loaders/http', {
-      'superagent': mockSuperagent(reqs)
-    }),
-    './loaders/image': proxyquire('../lib/loaders/image', {
-      './http': proxyquire('../lib/loaders/http', {
+    './create-job': proxyquire('../lib/create-job', {
+      './loaders/http': proxyquire('../lib/loaders/http', {
         'superagent': mockSuperagent(reqs)
-      })
-    }),
-    './loaders/json': proxyquire('../lib/loaders/json', {
-      './http': proxyquire('../lib/loaders/http', {
-        'superagent': mockSuperagent(reqs)
+      }),
+      './loaders/image': proxyquire('../lib/loaders/image', {
+        './http': proxyquire('../lib/loaders/http', {
+          'superagent': mockSuperagent(reqs)
+        })
+      }),
+      './loaders/json': proxyquire('../lib/loaders/json', {
+        './http': proxyquire('../lib/loaders/http', {
+          'superagent': mockSuperagent(reqs)
+        })
       })
     })
   })

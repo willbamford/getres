@@ -8,7 +8,7 @@
     "build:min": "browserify lib/index.js -s getres | uglifyjs -c > dist/getres.min.js",
     "watch": "watchify lib/index.js -s getres -o dist/getres.js",
     "lint": "standard",
-    "unit": "ava -v",
+    "unit": "ava -v -T 10s",
     "unit:watch": "ava -w -v",
     "test": "standard && ava -v",
     "coverage": "nyc ava"

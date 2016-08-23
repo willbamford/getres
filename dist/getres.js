@@ -1,23 +1,56 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.getres = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var identityParser = function (resource, cb) {
+var loadHttp = require('./loaders/http')
+var loadImage = require('./loaders/image')
+var loadJson = require('./loaders/json')
+var loadInvalidType = require('./loaders/invalid-type')
+
+var loaders = {
+  json: loadJson,
+  text: loadHttp,
+  image: loadImage,
+  invalidType: loadInvalidType
+}
+
+function identityParser (resource, cb) {
   return cb(null, resource)
 }
 
-function createJob (src, node, onDone) {
+function createJob (src, node, notifyDone) {
   node = node || {}
-  return {
+  var type = node.type || 'text'
+  var parser = node.parser || identityParser
+
+  var job = {
     src: src,
-    type: node.type || 'text',
-    parser: node.parser || identityParser,
-    onDone: onDone
+    type: type,
+    process: process
   }
+
+  function process (cb) {
+    var loader = loaders[job.type] || loaders.invalidType
+    loader(job, function (err, resource) {
+      if (err) {
+        return cb(err, job)
+      }
+      parser(resource, function (err, resource) {
+        if (err) {
+          return cb(err, job)
+        }
+        notifyDone(resource)
+        cb(null, job)
+      })
+    })
+  }
+
+  return job
 }
 
 module.exports = createJob
 
-},{}],2:[function(require,module,exports){
+},{"./loaders/http":4,"./loaders/image":5,"./loaders/invalid-type":6,"./loaders/json":7}],2:[function(require,module,exports){
 function createJobs () {
   var jobs = []
+
   return {
     add: function (job) {
       jobs.push(job)
@@ -51,10 +84,6 @@ module.exports = createJobs
 },{}],3:[function(require,module,exports){
 var createJob = require('./create-job')
 var createJobs = require('./create-jobs')
-var loadHttp = require('./loaders/http')
-var loadImage = require('./loaders/image')
-var loadJson = require('./loaders/json')
-var loadInvalidType = require('./loaders/invalid-type')
 
 function isArray (o) {
   return Object.prototype.toString.call(o) === '[object Array]'
@@ -68,14 +97,7 @@ function isString (o) {
   return (typeof o === 'string') || (o instanceof String)
 }
 
-var loaders = {
-  json: loadJson,
-  text: loadHttp,
-  image: loadImage,
-  invalidType: loadInvalidType
-}
-
-function processNode (node, name, jobs, resources) {
+function populateJobs (node, name, jobs, resources) {
   name = name || null
   var isRoot = !name
 
@@ -108,36 +130,22 @@ function processNode (node, name, jobs, resources) {
       subtree = resources[name]
     }
     Object.keys(node).forEach(function (childName) {
-      processNode(node[childName], childName, jobs, subtree)
+      populateJobs(node[childName], childName, jobs, subtree)
     })
   }
 }
 
 function processJobs (jobs, cb) {
-  jobs.each(
-    function processJob (job) {
-      var loader = loaders[job.type] || loaders.invalidType
-      loader(job, function (err, resource) {
-        if (err) {
-          return cb(err, job)
-        }
-        job.parser(resource, function (err, resource) {
-          if (err) {
-            return cb(err, job)
-          }
-          job.onDone(resource)
-          cb(null, job)
-        })
-      })
-    }
-  )
+  jobs.each(function (job) {
+    job.process(cb)
+  })
 }
 
 function getresCallback (manifest, cb) {
   var runError
   var jobs = createJobs()
   var resources = {}
-  processNode(manifest, null, jobs, resources)
+  populateJobs(manifest, null, jobs, resources)
 
   function onError (err) {
     cb(err, {})
@@ -183,7 +191,7 @@ function getres (manifest, cb) {
 
 module.exports = getres
 
-},{"./create-job":1,"./create-jobs":2,"./loaders/http":4,"./loaders/image":5,"./loaders/invalid-type":6,"./loaders/json":7}],4:[function(require,module,exports){
+},{"./create-job":1,"./create-jobs":2}],4:[function(require,module,exports){
 var request = require('superagent')
 
 module.exports = function loadHttp (entry, cb) {
