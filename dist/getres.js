@@ -15,7 +15,7 @@ function identityParser (resource, cb) {
   return cb(null, resource)
 }
 
-function createJob (src, node, cb) {
+function createJob (src, node) {
   node = node || {}
   var type = node.type || 'text'
   var parser = node.parser || identityParser
@@ -25,25 +25,26 @@ function createJob (src, node, cb) {
     if (cb && listeners.indexOf(cb) === -1) {
       listeners.push(cb)
     }
+    return job
   }
 
   function notify (err, resource, job) {
     listeners.forEach(function (cb) {
       cb(err, resource, job)
     })
+    return job
   }
 
   var job = {
     src: src,
     type: type,
-    process: process
+    process: process,
+    listen: listen
   }
 
-  listen(cb)
   listen(node.cb)
 
-  function process (cb) {
-    listen(cb)
+  function process () {
     var loader = loaders[job.type] || loaders.invalidType
     loader(job, function (err, resource) {
       if (err) {
@@ -65,6 +66,7 @@ var createJob = require('./create-job')
 
 function createJobs () {
   var jobs = []
+  var runError
 
   function add (job) {
     jobs.push(job)
@@ -82,12 +84,12 @@ function createJobs () {
   }
 
   return {
-    enqueue: function (src, node, cb) {
-      add(createJob(src, node, cb))
+    enqueue: function (src, node) {
+      var job = createJob(src, node)
+      add(job)
+      return job
     },
     process: function (cb) {
-      var runError
-
       function onJobDone (err, resource, job) {
         remove(job)
         if (err) {
@@ -98,9 +100,8 @@ function createJobs () {
           return cb(null)
         }
       }
-
       jobs.forEach(function (job) {
-        job.process(onJobDone)
+        job.listen(onJobDone).process()
       })
     }
   }
@@ -121,8 +122,9 @@ function getresCallback (manifest, cb) {
 }
 
 function getresPromises (manifest, cb) {
-  if (typeof Promise !== 'undefined') {
-    return new Promise(function (resolve, reject) {
+  var PromiseImpl = getres.Promise || (typeof Promise !== 'undefined' ? Promise : null)
+  if (PromiseImpl) {
+    return new PromiseImpl(function (resolve, reject) {
       getresCallback(manifest, function (err, res) {
         if (err) {
           return reject(err)
@@ -209,28 +211,34 @@ function processNode (node, name, jobs, resources) {
     throw new Error('Invalid node')
   } else if (node.src) {
     if (isString(node.src)) {
-      jobs.enqueue(node.src, node, function (err, resource) {
-        if (!err) {
-          resources[name] = resource
-        }
-      })
+      jobs
+        .enqueue(node.src, node)
+        .listen(function (err, resource) {
+          if (!err) {
+            resources[name] = resource
+          }
+        })
     } else if (isArray(node.src)) {
       resources[name] = []
       node.src.forEach(function (src) {
-        jobs.enqueue(src, node, function (err, resource) {
-          if (!err) {
-            resources[name].push(resource)
-          }
-        })
+        jobs
+          .enqueue(src, node)
+          .listen(function (err, resource) {
+            if (!err) {
+              resources[name].push(resource)
+            }
+          })
       })
     } else if (isObject(node.src)) {
       resources[name] = {}
       Object.keys(node.src).forEach(function (childName) {
-        jobs.enqueue(node.src[childName], node, function (err, resource) {
-          if (!err) {
-            resources[name][childName] = resource
-          }
-        })
+        jobs
+          .enqueue(node.src[childName], node)
+          .listen(function (err, resource) {
+            if (!err) {
+              resources[name][childName] = resource
+            }
+          })
       })
     }
   } else {

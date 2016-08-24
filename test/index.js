@@ -395,4 +395,54 @@ test.skip('progress', (t) => {
     }
   )
 })
+
+test.cb('set Promise class', (t) => {
+  t.plan(2)
+  var DummyPromise = function (cb) {
+    this.thenFns = []
+    this.catchFns = []
+    this.value = null
+    this.error = null
+
+    var _this = this
+
+    function resolve (value) {
+      _this.value = value
+      _this.thenFns.forEach((fn) => {
+        fn(value)
+      })
+    }
+
+    function reject (err) {
+      _this.err = err
+      _this.catchFns.forEach((fn) => {
+        fn(err)
+      })
+    }
+
+    cb(resolve, reject)
+  }
+  DummyPromise.prototype.then = function (cb) {
+    t.pass()
+    this.thenFns.push(cb)
+    return this
+  }
+  DummyPromise.prototype.catch = function (cb) {
+    this.catchFns.push(cb)
+    return this
+  }
+
+  const getres = createGetres({
+    '/foo.txt': { body: 'Foo' }
+  })
+
+  getres.Promise = DummyPromise
+
+  getres({ foo: { src: '/foo.txt' } })
+    .then((res) => {
+      t.is(res.foo, 'Foo')
+      t.end()
+    })
+})
+
 test.todo('abort outstanding requests on error')

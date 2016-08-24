@@ -49,6 +49,8 @@ In one giant ball of config (the `manifest`), this ES6 example demonstrates most
 
 Note: to use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill).
 
+You can also set your own promise library with `getres.Promise = require('bluebird')` (swap Bluebird for your promise library of choice).
+
 ```js
 import getres from 'getres'
 
