@@ -15,10 +15,23 @@ function identityParser (resource, cb) {
   return cb(null, resource)
 }
 
-function createJob (src, node, notifyDone) {
+function createJob (src, node, cb) {
   node = node || {}
   var type = node.type || 'text'
   var parser = node.parser || identityParser
+  var listeners = []
+
+  function listen (cb) {
+    if (cb && listeners.indexOf(cb) === -1) {
+      listeners.push(cb)
+    }
+  }
+
+  function notify (err, resource, job) {
+    listeners.forEach(function (cb) {
+      cb(err, resource, job)
+    })
+  }
 
   var job = {
     src: src,
@@ -26,18 +39,18 @@ function createJob (src, node, notifyDone) {
     process: process
   }
 
+  listen(cb)
+  listen(node.cb)
+
   function process (cb) {
+    listen(cb)
     var loader = loaders[job.type] || loaders.invalidType
     loader(job, function (err, resource) {
       if (err) {
-        return cb(err, job)
+        return notify(err, resource, job)
       }
       parser(resource, function (err, resource) {
-        if (err) {
-          return cb(err, job)
-        }
-        notifyDone(resource)
-        cb(null, job)
+        notify(err, resource, job)
       })
     })
   }
@@ -75,7 +88,7 @@ function createJobs () {
     process: function (cb) {
       var runError
 
-      function onJobDone (err, job) {
+      function onJobDone (err, resource, job) {
         remove(job)
         if (err) {
           runError = new Error('Job error ' + job.src + '. ' + err.message)
@@ -196,21 +209,27 @@ function processNode (node, name, jobs, resources) {
     throw new Error('Invalid node')
   } else if (node.src) {
     if (isString(node.src)) {
-      jobs.enqueue(node.src, node, function (resource) {
-        resources[name] = resource
+      jobs.enqueue(node.src, node, function (err, resource) {
+        if (!err) {
+          resources[name] = resource
+        }
       })
     } else if (isArray(node.src)) {
       resources[name] = []
       node.src.forEach(function (src) {
-        jobs.enqueue(src, node, function (resource) {
-          resources[name].push(resource)
+        jobs.enqueue(src, node, function (err, resource) {
+          if (!err) {
+            resources[name].push(resource)
+          }
         })
       })
     } else if (isObject(node.src)) {
       resources[name] = {}
       Object.keys(node.src).forEach(function (childName) {
-        jobs.enqueue(node.src[childName], node, function (resource) {
-          resources[name][childName] = resource
+        jobs.enqueue(node.src[childName], node, function (err, resource) {
+          if (!err) {
+            resources[name][childName] = resource
+          }
         })
       })
     }

@@ -9,7 +9,7 @@ function mockSuperagent (reqs) {
       return this
     },
     end: function (cb) {
-      var req = reqs[this.url]
+      const req = reqs[this.url]
       setTimeout(() => {
         if (req.err) {
           cb(req.err)
@@ -139,6 +139,39 @@ test.cb('get nested', (t) => {
   )
 })
 
+test.cb('resource callback', (t) => {
+  t.plan(6)
+  const mockErr = new Error('Not Found')
+  const getres = createGetres({
+    '/foo.txt': { err: mockErr },
+    '/bar.txt': { body: 'Bar' }
+  })
+  getres(
+    {
+      foo: {
+        src: '/foo.txt',
+        cb: (err, resource) => {
+          t.deepEqual(err, mockErr)
+          t.is(resource, null)
+        }
+      },
+      bar: {
+        src: '/bar.txt',
+        parser: (resource, cb) => { cb(null, resource.toUpperCase()) },
+        cb: (err, resource) => {
+          t.is(err, null)
+          t.is('BAR', resource)
+          t.end()
+        }
+      }
+    },
+    (err, res) => {
+      t.is(err.message, 'Job error /foo.txt. Not Found')
+      t.deepEqual(res, {})
+    }
+  )
+})
+
 test.todo('error should reference manifest node that is to blame')
 
 test.cb('get json', (t) => {
@@ -257,7 +290,7 @@ test.cb('handle manifest type error', (t) => {
 })
 
 test.cb('handle http errors', (t) => {
-  const mockErr = { message: 'Not Found' }
+  const mockErr = new Error('Not Found')
   const getres = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
@@ -324,7 +357,7 @@ test('get text promise', (t) => {
 })
 
 test('handle http error promise', (t) => {
-  const mockErr = { message: 'Not Found' }
+  const mockErr = new Error('Not Found')
   const getres = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
@@ -340,5 +373,4 @@ test('handle http error promise', (t) => {
 })
 
 test.todo('progress')
-test.todo('per resource callbacks')
 test.todo('abort outstanding requests on error')
