@@ -1,6 +1,8 @@
 # getres [![CircleCI](https://circleci.com/gh/WebSeed/getres.svg?style=svg)](https://circleci.com/gh/WebSeed/getres)
 
-Resource loading in the browser and Node.js  (text, JSON, binary, images) designed to work with HTML5 Canvas and WebGL.
+Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL.
+
+So far there's support for loading text, JSON and images.
 
 Compatible with IE9+ and all other modern browsers (*promise* support optional)
 
@@ -18,34 +20,38 @@ npm i getres -S
 
 ### Simple
 
-Demonstrates how you load a single `text` resource using a good old fashioned callback instead promises.
+Demonstrates how you load a single `image` resource using ES5 and good old fashioned callbacks (instead of promises).
 
 ```js
+var getres = require('getres')
+
 getres({
-  text: {
-    src: 'http://example.com/my.txt'
+  photo: {
+    src: 'http://example.com/photo.jpg'
   },
-  (err, { text }) => {
+  function (err, resources) {
     if (err) {
       console.error(err)
       return
     }
-    console.log('text', text)
+    console.log('pic', resources.photo)
   }
 })
 ```
 
 ### Kitchen sink
 
-In one giant ball of config i.e. the `manifest`, this example demonstrates most of the functionality of `getres` including:
+In one giant ball of config (the `manifest`), this ES6 example demonstrates most of the functionality of `getres` including:
 * Loading different resource types: `text` (default), `json` and `image`.
 * Using a `parser` function to transform the resource.
 * Hooking into individual resource loading with `cb`.
-* Accessing the _resource tree_ using _promises_ (instead of traditional callback).
+* Accessing the _resource tree_ using promises (instead of traditional callback).
 
-To use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill).
+Note: to use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill).
 
 ```js
+import getres from 'getres'
+
 getres({
   text: {
     src: 'http://example.com/my.txt'
