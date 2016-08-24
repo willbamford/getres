@@ -16,21 +16,50 @@ npm i getres -S
 
 ## Examples
 
-### Using promises
+### Simple
+
+Demonstrates how you load a single `text` resource using a good old fashioned callback instead promises.
+
+```js
+getres({
+  text: {
+    src: 'http://example.com/my.txt'
+  },
+  (err, { text }) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    console.log('text', text)
+  }
+})
+```
+
+### Kitchen sink
+
+In one giant ball of config i.e. the `manifest`, this example demonstrates most of the functionality of `getres` including:
+* Loading different resource types: `text` (default), `json` and `image`.
+* Using a `parser` function to transform the resource.
+* Hooking into individual resource loading with `cb`.
+* Accessing the _resource tree_ using _promises_ (instead of traditional callback).
 
 To use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill).
 
 ```js
-import getres from 'getres'
-
 getres({
   text: {
     src: 'http://example.com/my.txt'
   },
   parsedText: {
     src: 'http://example.com/my.txt',
-    type: 'text',
-    parser: (resource, cb) => cb(null, resource.toUpperCase());
+    parser: (resource, cb) => cb(null, resource.toUpperCase()),
+    cb: (err, resource) => {
+      if (err) {
+        console.error(err)
+        return
+      }
+      console.log('resource', resource)
+    }
   },
   json: {
     src: 'http://example.com/my.json',
@@ -47,32 +76,9 @@ getres({
 })
 ```
 
-### Using callbacks
-
-If your environment doesn't support promises you can use good old fashioned callbacks:
-
-```js
-import getres from 'getres';
-
-getres({
-  text: {
-    src: 'http://example.com/my.txt'
-  },
-  (err, { text }) => {
-    if (err) {
-      console.error(err)
-      return
-    }
-    console.log('text', text)
-  }
-})
-```
-
 ### Using a source array
 
 ```js
-import getres from 'getres'
-
 getres({
   image: {
     src: 'http://example.com/my.txt',
@@ -103,8 +109,6 @@ getres({
 ### Using a source object
 
 ```js
-import getres from 'getres'
-
 getres({
   image: {
     src: 'http://example.com/my.txt',
@@ -135,8 +139,6 @@ getres({
 ### Nested
 
 ```js
-import getres from 'getres'
-
 getres({
   text: { src: 'http://example.com/text.txt' }
   images: {
