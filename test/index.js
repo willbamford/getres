@@ -369,8 +369,30 @@ test('handle http error promise', (t) => {
     })
     .catch((err) => {
       t.is(err.message, 'Job error /foo.txt. Not Found')
-    })
+    }
+  )
 })
 
-test.todo('progress')
+test.skip('progress', (t) => {
+  const mockErr = new Error('Not Found')
+  const getres = createGetres({
+    '/foo.txt': { err: mockErr },
+    '/bar.txt': { body: 'Foo' }
+  })
+  var progress = []
+  return getres(
+    {
+      foo: { src: '/foo.txt' },
+      bar: { src: '/bar.txt' }
+    },
+    null,
+    ({ percent, done, remaining, message }) => {
+      progress.push()
+    }
+    )
+    .catch((err) => {
+      t.is(err.message, 'Job error /foo.txt. Not Found')
+    }
+  )
+})
 test.todo('abort outstanding requests on error')
