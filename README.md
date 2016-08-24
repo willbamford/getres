@@ -6,7 +6,7 @@ So far there's support for loading text, JSON and images.
 
 Compatible with IE9+ and all other modern browsers (*promise* support optional)
 
-Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to fetch assets.
+Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
 
 Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.
 
