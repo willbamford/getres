@@ -44,6 +44,7 @@ In one giant ball of config (the `manifest`), this ES6 example demonstrates most
 * Using a `parser` function to transform the resource.
 * Hooking into individual resource loading with `cb`.
 * Accessing the _resource tree_ using promises (instead of traditional callback).
+* Hooking into _progress_ events.
 
 Note: to use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). You can also set your own promise library with `getres.Promise = require('bluebird')` (swap Bluebird for your promise library of choice).
 
@@ -72,7 +73,10 @@ getres({
   image: {
     src: 'http://example.com/my.jpg',
     type: 'image'
-  }
+  },
+  null, // Indicates you want to use promises
+  (progressEvent)
+    => { /* Do something with progress event */ }
 }).then(({ text, parsedText, json, image }) => {
   /* Do something with resources */
 }).catch((err) => {
