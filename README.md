@@ -4,9 +4,9 @@ Universal resource loading (browser and Node.js) designed to work with HTML5 Can
 
 So far there's support for loading text, JSON and images.
 
-Compatible with IE9+ and all other modern browsers (*promise* support optional)
+Compatible with IE9+ and all other modern browsers with optional support for *promises*.
 
-Uses [Superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
+Uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
 
 Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.
 
@@ -20,7 +20,7 @@ npm i getres -S
 
 ### Simple
 
-Demonstrates how you load a single `image` resource using ES5 and good old fashioned callbacks (instead of promises).
+Demonstrates how you load a single `image` resource using ES5 and good old fashioned callbacks.
 
 ```js
 var getres = require('getres')
@@ -47,9 +47,7 @@ In one giant ball of config (the `manifest`), this ES6 example demonstrates most
 * Hooking into individual resource loading with `cb`.
 * Accessing the _resource tree_ using promises (instead of traditional callback).
 
-Note: to use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill).
-
-You can also set your own promise library with `getres.Promise = require('bluebird')` (swap Bluebird for your promise library of choice).
+Note: to use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). You can also set your own promise library with `getres.Promise = require('bluebird')` (swap Bluebird for your promise library of choice).
 
 ```js
 import getres from 'getres'
@@ -161,8 +159,7 @@ getres({
   }
 }).then(({ text, images }) => {
   console.log('text', text)
-  console.log('images.alpha', images.alpha)
-  console.log('images.beta', images.beta)
+  console.log('images', images.alpha, images.beta)
 }).catch((err) => {
   console.error(err)
 })
@@ -170,4 +167,4 @@ getres({
 
 ## Credits
 
-API and DOM element loading inspired by [resl](https://github.com/mikolalysenko/resl).
+`getres` was created after trying (and failing) to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
