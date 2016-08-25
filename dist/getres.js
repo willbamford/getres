@@ -89,17 +89,50 @@ function createJobs () {
       add(job)
       return job
     },
-    process: function (cb) {
-      function onJobDone (err, resource, job) {
-        remove(job)
-        if (err) {
-          runError = new Error('Job error ' + job.src + '. ' + err.message)
-          return cb(runError)
+    process: function (callback, progress) {
+      var processed = 0
+      var total = jobs.length
+
+      function sendProgress (type, props) {
+        if (!progress) {
+          return
         }
+        props = props || {}
+        var event = {
+          type: type,
+          processed: processed,
+          remaining: jobs.length,
+          total: total,
+          percent: !total ? 0 : processed * 100 / total
+        }
+        Object.keys(props).forEach(function (key) {
+          event[key] = props[key]
+        })
+        progress(event)
+      }
+
+      function checkDone () {
         if (empty() && !runError) {
-          return cb(null)
+          sendProgress('done')
+          callback(null)
         }
       }
+
+      function onJobDone (err, resource, job) {
+        remove(job)
+        processed += 1
+        if (err) {
+          runError = new Error('Job error ' + job.src + '. ' + err.message)
+          return callback(runError)
+        }
+
+        sendProgress('loaded', { src: job.src })
+        checkDone()
+      }
+
+      sendProgress('started')
+      checkDone() // No jobs
+
       jobs.forEach(function (job) {
         job.listen(onJobDone).process()
       })
@@ -112,34 +145,41 @@ module.exports = createJobs
 },{"./create-job":1}],3:[function(require,module,exports){
 var processManifest = require('./process-manifest')
 
-function getresCallback (manifest, cb) {
+function getresCallback (manifest, callback, progress) {
   var results = processManifest(manifest)
   var jobs = results.jobs
   var resources = results.resources
-  jobs.process(function (err) {
-    cb(err, resources)
-  })
+  jobs.process(
+    function (err) {
+      callback(err, resources)
+    },
+    progress
+  )
 }
 
-function getresPromises (manifest, cb) {
+function getresPromises (manifest, callback, progress) {
   var PromiseImpl = getres.Promise || (typeof Promise !== 'undefined' ? Promise : null)
   if (PromiseImpl) {
     return new PromiseImpl(function (resolve, reject) {
-      getresCallback(manifest, function (err, res) {
-        if (err) {
-          return reject(err)
-        }
-        return resolve(res)
-      })
+      getresCallback(
+        manifest,
+        function (err, res) {
+          if (err) {
+            return reject(err)
+          }
+          return resolve(res)
+        },
+        progress
+      )
     })
   } else {
     throw new Error('Promises are not supported in this environment')
   }
 }
 
-function getres (manifest, cb) {
-  var fn = cb ? getresCallback : getresPromises
-  return fn(manifest, cb)
+function getres (manifest, callback, progress) {
+  var fn = callback ? getresCallback : getresPromises
+  return fn(manifest, callback, progress)
 }
 
 module.exports = getres

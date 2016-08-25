@@ -1,8 +1,6 @@
 # getres [![CircleCI](https://circleci.com/gh/WebSeed/getres.svg?style=svg)](https://circleci.com/gh/WebSeed/getres)
 
-Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL.
-
-So far there's support for loading text, JSON and images.
+Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Lightweight at only ~6KB when compressed with support for loading text, JSON and images.
 
 Compatible with IE9+ and all other modern browsers with optional support for *promises*.
 

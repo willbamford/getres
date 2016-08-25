@@ -172,8 +172,6 @@ test.cb('resource callback', (t) => {
   )
 })
 
-test.todo('error should reference manifest node that is to blame')
-
 test.cb('get json', (t) => {
   const getres = createGetres({
     '/zoe.json': { body: '{ "hello": "world!" }' }
@@ -373,8 +371,8 @@ test('handle http error promise', (t) => {
   )
 })
 
-test.only.cb('progress', (t) => {
-  t.plan(3)
+test.cb('progress with callback', (t) => {
+  var events = []
   const getres = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' },
@@ -388,25 +386,155 @@ test.only.cb('progress', (t) => {
     },
     (err, resources) => {
       if (err) {}
+
+      t.deepEqual(events[0], {
+        type: 'started',
+        processed: 0,
+        remaining: 3,
+        total: 3,
+        percent: 0
+      })
+
+      t.deepEqual(events[1], {
+        type: 'loaded',
+        processed: 1,
+        remaining: 2,
+        total: 3,
+        percent: 1 * 100 / 3,
+        src: '/foo.txt'
+      })
+
+      t.deepEqual(events[2], {
+        type: 'loaded',
+        processed: 2,
+        remaining: 1,
+        total: 3,
+        percent: 2 * 100 / 3,
+        src: '/bar.txt'
+      })
+
+      t.deepEqual(events[3], {
+        type: 'loaded',
+        processed: 3,
+        remaining: 0,
+        total: 3,
+        percent: 3 * 100 / 3,
+        src: '/baz.txt'
+      })
+
+      t.deepEqual(events[4], {
+        type: 'done',
+        processed: 3,
+        remaining: 0,
+        total: 3,
+        percent: 100
+      })
+
       t.end()
     },
-    (type /*, job, { loaded, remaining, total, percent }*/) => {
-      t.pass()
-      switch (type) {
-        case 'started':
-          break
-        case 'parsed':
-          break
-        case 'loaded':
-          break
-        case 'error':
-          break
-      }
+    (event) => {
+      events.push(event)
     }
   )
 })
 
-test.cb('set Promise class', (t) => {
+test.cb('progress with no jobs', (t) => {
+  var events = []
+  const getres = createGetres({})
+  return getres(
+    {},
+    (err, resources) => {
+      t.is(null, err)
+      t.deepEqual(events[0], {
+        type: 'started',
+        processed: 0,
+        remaining: 0,
+        total: 0,
+        percent: 0
+      })
+      t.deepEqual(events[1], {
+        type: 'done',
+        processed: 0,
+        remaining: 0,
+        total: 0,
+        percent: 0
+      })
+      t.end()
+    },
+    (event) => {
+      events.push(event)
+    }
+  )
+})
+
+test.cb('progress with callback', (t) => {
+  var events = []
+  const getres = createGetres({
+    '/foo.txt': { body: 'Foo' },
+    '/bar.txt': { body: 'Bar' },
+    '/baz.txt': { body: 'Baz' }
+  })
+  return getres(
+    {
+      foo: { src: '/foo.txt' },
+      bar: { src: '/bar.txt' },
+      baz: { src: '/baz.txt' }
+    },
+    (err, resources) => {
+      if (err) {}
+
+      t.deepEqual(events[0], {
+        type: 'started',
+        processed: 0,
+        remaining: 3,
+        total: 3,
+        percent: 0
+      })
+
+      t.deepEqual(events[1], {
+        type: 'loaded',
+        processed: 1,
+        remaining: 2,
+        total: 3,
+        percent: 1 * 100 / 3,
+        src: '/foo.txt'
+      })
+
+      t.deepEqual(events[2], {
+        type: 'loaded',
+        processed: 2,
+        remaining: 1,
+        total: 3,
+        percent: 2 * 100 / 3,
+        src: '/bar.txt'
+      })
+
+      t.deepEqual(events[3], {
+        type: 'loaded',
+        processed: 3,
+        remaining: 0,
+        total: 3,
+        percent: 3 * 100 / 3,
+        src: '/baz.txt'
+      })
+
+      t.deepEqual(events[4], {
+        type: 'done',
+        processed: 3,
+        remaining: 0,
+        total: 3,
+        percent: 100
+      })
+
+      t.end()
+    },
+    (event) => {
+      events.push(event)
+    }
+  )
+})
+
+test.cb('set promise class', (t) => {
   t.plan(2)
   var DummyPromise = function (cb) {
     this.thenFns = []
