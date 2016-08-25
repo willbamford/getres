@@ -373,25 +373,35 @@ test('handle http error promise', (t) => {
   )
 })
 
-test.skip('progress', (t) => {
-  const mockErr = new Error('Not Found')
+test.only.cb('progress', (t) => {
+  t.plan(3)
   const getres = createGetres({
-    '/foo.txt': { err: mockErr },
-    '/bar.txt': { body: 'Foo' }
+    '/foo.txt': { body: 'Foo' },
+    '/bar.txt': { body: 'Bar' },
+    '/baz.txt': { body: 'Baz' }
   })
-  var progress = []
   return getres(
     {
       foo: { src: '/foo.txt' },
-      bar: { src: '/bar.txt' }
+      bar: { src: '/bar.txt' },
+      baz: { src: '/baz.txt' }
     },
-    null,
-    ({ percent, done, remaining, message }) => {
-      progress.push()
-    }
-    )
-    .catch((err) => {
-      t.is(err.message, 'Job error /foo.txt. Not Found')
+    (err, resources) => {
+      if (err) {}
+      t.end()
+    },
+    (type /*, job, { loaded, remaining, total, percent }*/) => {
+      t.pass()
+      switch (type) {
+        case 'started':
+          break
+        case 'parsed':
+          break
+        case 'loaded':
+          break
+        case 'error':
+          break
+      }
     }
   )
 })
@@ -404,21 +414,19 @@ test.cb('set Promise class', (t) => {
     this.value = null
     this.error = null
 
-    var _this = this
-
-    function resolve (value) {
-      _this.value = value
-      _this.thenFns.forEach((fn) => {
+    var resolve = function (value) {
+      this.value = value
+      this.thenFns.forEach((fn) => {
         fn(value)
       })
-    }
+    }.bind(this)
 
-    function reject (err) {
-      _this.err = err
-      _this.catchFns.forEach((fn) => {
+    var reject = function (err) {
+      this.err = err
+      this.catchFns.forEach((fn) => {
         fn(err)
       })
-    }
+    }.bind(this)
 
     cb(resolve, reject)
   }
