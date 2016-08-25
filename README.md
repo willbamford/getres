@@ -23,9 +23,11 @@ Demonstrates how you load a single `image` resource using ES5 and good old fashi
 ```js
 var getres = require('getres')
 
-getres({
-  photo: {
-    src: 'http://example.com/photo.jpg'
+getres(
+  {
+    photo: {
+      src: 'http://example.com/photo.jpg'
+    }
   },
   function (err, resources) {
     if (err) {
@@ -34,7 +36,7 @@ getres({
     }
     console.log('photo', resources.photo)
   }
-})
+)
 ```
 
 ### Kitchen sink
