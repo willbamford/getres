@@ -32,7 +32,7 @@ getres({
       console.error(err)
       return
     }
-    console.log('pic', resources.photo)
+    console.log('photo', resources.photo)
   }
 })
 ```
