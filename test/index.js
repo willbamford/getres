@@ -6,6 +6,11 @@ function mockSuperagent (reqs) {
   return {
     get: function (url) {
       this.url = url
+      this._test.withCredentialsCalled[this.url] = false
+      return this
+    },
+    withCredentials: function () {
+      this._test.withCredentialsCalled[this.url] = true
       return this
     },
     end: function (cb) {
@@ -17,6 +22,9 @@ function mockSuperagent (reqs) {
           cb(null, { body: req.body })
         }
       }, 0)
+    },
+    _test: {
+      withCredentialsCalled: {}
     }
   }
 }
@@ -26,32 +34,32 @@ function beginsWith (needle, haystack) {
 }
 
 function createGetres (reqs) {
+  const superagent = mockSuperagent(reqs)
+  const httpLoader = proxyquire('../lib/loaders/http', { superagent })
+
   // Having to jump through hoops to get something akin to integration testing
-  return proxyquire('../lib', {
-    './process-manifest': proxyquire('../lib/process-manifest', {
-      './create-jobs': proxyquire('../lib/create-jobs', {
-        './create-job': proxyquire('../lib/create-job', {
-          './loaders/http': proxyquire('../lib/loaders/http', {
-            'superagent': mockSuperagent(reqs)
-          }),
-          './loaders/image': proxyquire('../lib/loaders/image', {
-            './http': proxyquire('../lib/loaders/http', {
-              'superagent': mockSuperagent(reqs)
-            })
-          }),
-          './loaders/json': proxyquire('../lib/loaders/json', {
-            './http': proxyquire('../lib/loaders/http', {
-              'superagent': mockSuperagent(reqs)
+  return {
+    getres: proxyquire('../lib', {
+      './process-manifest': proxyquire('../lib/process-manifest', {
+        './create-jobs': proxyquire('../lib/create-jobs', {
+          './create-job': proxyquire('../lib/create-job', {
+            './loaders/http': httpLoader,
+            './loaders/image': proxyquire('../lib/loaders/image', {
+              './http': httpLoader
+            }),
+            './loaders/json': proxyquire('../lib/loaders/json', {
+              './http': httpLoader
             })
           })
         })
       })
-    })
-  })
+    }),
+    superagent
+  }
 }
 
 test.cb('get text', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' }
   })
@@ -70,7 +78,7 @@ test.cb('get text', (t) => {
 })
 
 test.cb('get array src', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' }
   })
@@ -88,7 +96,7 @@ test.cb('get array src', (t) => {
 })
 
 test.cb('get object src', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/a.txt': { body: 'A' },
     '/b.txt': { body: 'B' }
   })
@@ -111,7 +119,7 @@ test.cb('get object src', (t) => {
 })
 
 test.cb('get nested', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/a.txt': { body: 'this is a' },
     '/b.txt': { body: 'this is b' }
   })
@@ -142,7 +150,7 @@ test.cb('get nested', (t) => {
 test.cb('resource callback', (t) => {
   t.plan(6)
   const mockErr = new Error('Not Found')
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Bar' }
   })
@@ -173,7 +181,7 @@ test.cb('resource callback', (t) => {
 })
 
 test.cb('get json', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/zoe.json': { body: '{ "hello": "world!" }' }
   })
   getres(
@@ -189,7 +197,7 @@ test.cb('get json', (t) => {
 })
 
 test.cb('handle json decode error', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/invalid.json': { body: '{ "hello: "world!" }' }
   })
   getres(
@@ -204,7 +212,7 @@ test.cb('handle json decode error', (t) => {
 })
 
 test.cb('get png image', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/img.png': { body: images.png.input }
   })
   getres(
@@ -220,7 +228,7 @@ test.cb('get png image', (t) => {
 })
 
 test.cb('get gif image', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/img.gif': { body: images.gif.input }
   })
   getres(
@@ -236,7 +244,7 @@ test.cb('get gif image', (t) => {
 })
 
 test.cb('get jpg image', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/img1.jpg': { body: images.jpg.input },
     '/img2.jpeg': { body: images.jpg.input }
   })
@@ -255,7 +263,7 @@ test.cb('get jpg image', (t) => {
 })
 
 test.cb('handle corrupt png image error', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/corrupt.png': { body: images.corruptPng.input }
   })
   getres(
@@ -270,7 +278,7 @@ test.cb('handle corrupt png image error', (t) => {
 })
 
 test.cb('handle manifest type error', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' }
   })
@@ -289,7 +297,7 @@ test.cb('handle manifest type error', (t) => {
 
 test.cb('handle http errors', (t) => {
   const mockErr = new Error('Not Found')
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
   })
@@ -307,7 +315,7 @@ test.cb('handle http errors', (t) => {
 })
 
 test.cb('use parser function', (t) => {
-  const getres = createGetres({ '/world.txt': { body: 'hello world' } })
+  const { getres } = createGetres({ '/world.txt': { body: 'hello world' } })
   getres(
     {
       hello: {
@@ -326,7 +334,7 @@ test.cb('use parser function', (t) => {
 })
 
 test.cb('handle parser error', (t) => {
-  const getres = createGetres({ '/world.txt': { body: 'hello world' } })
+  const { getres } = createGetres({ '/world.txt': { body: 'hello world' } })
   const expectErr = new Error('Parse this!')
   getres(
     {
@@ -345,7 +353,7 @@ test.cb('handle parser error', (t) => {
 })
 
 test('get text promise', (t) => {
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' }
   })
   return getres({ foo: { src: '/foo.txt' } })
@@ -356,7 +364,7 @@ test('get text promise', (t) => {
 
 test('handle http error promise', (t) => {
   const mockErr = new Error('Not Found')
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { err: mockErr },
     '/bar.txt': { body: 'Foo' }
   })
@@ -373,7 +381,7 @@ test('handle http error promise', (t) => {
 
 test.cb('progress with callback', (t) => {
   var events = []
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' },
     '/baz.txt': { body: 'Baz' }
@@ -440,7 +448,7 @@ test.cb('progress with callback', (t) => {
 
 test.cb('progress with no jobs', (t) => {
   var events = []
-  const getres = createGetres({})
+  const { getres } = createGetres({})
   return getres(
     {},
     (err, resources) => {
@@ -469,7 +477,7 @@ test.cb('progress with no jobs', (t) => {
 
 test.cb('progress with callback', (t) => {
   var events = []
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' },
     '/baz.txt': { body: 'Baz' }
@@ -568,7 +576,7 @@ test.cb('set promise class', (t) => {
     return this
   }
 
-  const getres = createGetres({
+  const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' }
   })
 
@@ -579,6 +587,24 @@ test.cb('set promise class', (t) => {
       t.is(res.foo, 'Foo')
       t.end()
     })
+})
+
+test.cb('send http credentials', (t) => {
+  const { getres, superagent } = createGetres({
+    '/foo.txt': { body: 'Foo' }
+  })
+  return getres(
+    {
+      foo: {
+        src: '/foo.txt',
+        credentials: true
+      }
+    },
+    () => {
+      t.true(superagent._test.withCredentialsCalled['/foo.txt'])
+      t.end()
+    }
+  )
 })
 
 test.todo('abort outstanding requests on error')

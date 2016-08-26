@@ -19,6 +19,7 @@ function createJob (src, node) {
   node = node || {}
   var type = node.type || 'text'
   var parser = node.parser || identityParser
+  var credentials = node.credentials || false
   var listeners = []
 
   function listen (cb) {
@@ -38,6 +39,7 @@ function createJob (src, node) {
   var job = {
     src: src,
     type: type,
+    credentials: credentials,
     process: process,
     listen: listen
   }
@@ -187,16 +189,20 @@ module.exports = getres
 },{"./process-manifest":8}],4:[function(require,module,exports){
 var request = require('superagent')
 
-module.exports = function loadHttp (entry, cb) {
-  request
-    .get(entry.src)
-    .end(function (err, response) {
-      cb(err, response ? response.body : null)
-    })
+module.exports = function loadHttp (node, cb) {
+  var req = request.get(node.src)
+
+  if (node.credentials) {
+    req.withCredentials()
+  }
+
+  req.end(function (err, response) {
+    cb(err, response ? response.body : null)
+  })
 }
 
 },{"superagent":10}],5:[function(require,module,exports){
-module.exports = function loadImage (entry, cb) {
+module.exports = function loadImage (node, cb) {
   var image = new window.Image()
   image.onload = function () {
     cb(null, image)
@@ -204,19 +210,19 @@ module.exports = function loadImage (entry, cb) {
   image.onerror = function (err) {
     cb(err)
   }
-  image.src = entry.src
+  image.src = node.src
 }
 
 },{}],6:[function(require,module,exports){
-module.exports = function loadInvalidType (entry, cb) {
-  cb(new Error('Invalid manifest type: ' + entry.type), {})
+module.exports = function loadInvalidType (node, cb) {
+  cb(new Error('Invalid manifest type: ' + node.type), {})
 }
 
 },{}],7:[function(require,module,exports){
 var loadHttp = require('./http')
 
-module.exports = function loadJson (entry, cb) {
-  loadHttp(entry, function (err, resource) {
+module.exports = function loadJson (node, cb) {
+  loadHttp(node, function (err, resource) {
     if (err) {
       return cb(err)
     }

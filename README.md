@@ -2,7 +2,7 @@
 
 Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images.
 
-**getres** is lightweight in the browser, at only ~6KB when compressed, and is compatible with IE9+ and all other modern browsers with optional support for *promises*.
+**getres** is lightweight (weighing in at just over ~6KB in the browser when compressed) and is compatible with IE9+ and all other modern browsers with support for *promises* optional.
 
 ## Simple example
 
@@ -13,7 +13,7 @@ getres(
   {
     photo: {
       src: 'http://example.com/photo.jpg',
-      type: 'image'
+      type: 'image',
     }
   },
   function (err, resources) {
@@ -183,7 +183,7 @@ Contributions welcome!
 
 ## Credits
 
-`getres` was created after trying (and failing) to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
+`getres` was created after trying and failing to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, the API resemblance between both libraries is strong. Thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
 
 `getres` uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
 
