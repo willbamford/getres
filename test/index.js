@@ -36,24 +36,23 @@ function beginsWith (needle, haystack) {
 function createGetres (reqs) {
   const superagent = mockSuperagent(reqs)
   const httpLoader = proxyquire('../lib/loaders/http', { superagent })
-
-  // Having to jump through hoops to get something akin to integration testing
-  return {
-    getres: proxyquire('../lib', {
-      './process-manifest': proxyquire('../lib/process-manifest', {
-        './create-jobs': proxyquire('../lib/create-jobs', {
-          './create-job': proxyquire('../lib/create-job', {
-            './loaders/http': httpLoader,
-            './loaders/image': proxyquire('../lib/loaders/image', {
-              './http': httpLoader
-            }),
-            './loaders/json': proxyquire('../lib/loaders/json', {
-              './http': httpLoader
-            })
+  const getres = proxyquire('../lib', {
+    './process-manifest': proxyquire('../lib/process-manifest', {
+      './create-jobs': proxyquire('../lib/create-jobs', {
+        './create-job': proxyquire('../lib/create-job', {
+          './loaders/http': httpLoader,
+          './loaders/image': proxyquire('../lib/loaders/image', {
+            './http': httpLoader
+          }),
+          './loaders/json': proxyquire('../lib/loaders/json', {
+            './http': httpLoader
           })
         })
       })
-    }),
+    })
+  })
+  return {
+    getres,
     superagent
   }
 }
@@ -586,6 +585,29 @@ test.cb('set promise class', (t) => {
     .then((res) => {
       t.is(res.foo, 'Foo')
       t.end()
+    })
+})
+
+test('error if no promise support', (t) => {
+  const { getres } = createGetres({
+    '/foo.txt': { body: 'Foo' }
+  })
+  getres.Promise = null
+  try {
+    getres({ foo: { src: '/foo.txt' } })
+  } catch (err) {
+    t.is(err.message, 'Promises are not supported in this environment')
+  }
+})
+
+test('error if non-object node', (t) => {
+  const { getres } = createGetres({
+    '/foo.txt': { body: 'Foo' }
+  })
+
+  getres({ foo: [1, 2, 3] })
+    .catch((err) => {
+      t.is(err.message, 'Invalid node: 0')
     })
 })
 
