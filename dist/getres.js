@@ -148,19 +148,25 @@ module.exports = createJobs
 var processManifest = require('./process-manifest')
 
 function getresCallback (manifest, callback, progress) {
-  var results = processManifest(manifest)
-  var jobs = results.jobs
-  var resources = results.resources
-  jobs.process(
-    function (err) {
-      callback(err, resources)
-    },
-    progress
-  )
+  try {
+    var results = processManifest(manifest)
+    var jobs = results.jobs
+    var resources = results.resources
+    jobs.process(
+      function (err) {
+        callback(err, resources)
+      },
+      progress
+    )
+  } catch (err) {
+    callback(err)
+  }
 }
 
 function getresPromises (manifest, callback, progress) {
-  var PromiseImpl = getres.Promise || (typeof Promise !== 'undefined' ? Promise : null)
+  var PromiseImpl = typeof getres.Promise !== 'undefined'
+    ? getres.Promise
+    : (typeof Promise !== 'undefined' ? Promise : null)
   if (PromiseImpl) {
     return new PromiseImpl(function (resolve, reject) {
       getresCallback(
@@ -254,7 +260,7 @@ function processNode (node, name, jobs, resources) {
   var isRoot = !name
 
   if (!isObject(node)) {
-    throw new Error('Invalid node')
+    throw new Error('Invalid node: ' + name)
   } else if (node.src) {
     if (isString(node.src)) {
       jobs
