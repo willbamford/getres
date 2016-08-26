@@ -68,7 +68,7 @@ All of these examples use ES6 syntax which may require _transpilation_ to work a
 
 ### Kitchen sink example
 
-In one giant ball of config (the `manifest`), this ES6 example demonstrates most of the functionality of `getres` including:
+In one giant ball of config (the `manifest`), this ES6 example demonstrates most of the functionality of **getres** including:
 * Loading different resource types: `text` (default), `json` and `image`.
 * Using a `parser` function to transform the resource.
 * Hooking into individual resource loading with the `cb` function.
@@ -205,8 +205,8 @@ Contributions welcome!
 
 ## Credits
 
-`getres` was created after trying and failing to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, the API resemblance between both libraries is strong. Thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
+**getres** was created after trying and failing to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, the API resemblance between both libraries is strong. Thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
 
-`getres` uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
+**getres** uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
 
 Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.
