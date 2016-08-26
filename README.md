@@ -1,4 +1,24 @@
-# getres [![CircleCI](https://circleci.com/gh/WebSeed/getres.svg?style=svg)](https://circleci.com/gh/WebSeed/getres)
+# getres
+<a href="https://circleci.com/gh/WebSeed/getres">
+  <img
+    src="https://circleci.com/gh/WebSeed/getres.svg?style=shield"
+    alt="Build status" />
+</a>
+<a href="https://npmjs.org/package/getres">
+  <img
+    src="https://img.shields.io/npm/v/getres.svg?style=flat-square"
+    alt="NPM version" />
+</a>
+<a href="https://standardjs.com">
+  <img
+    src="https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square"
+    alt="Standard" />
+</a>
+<a href="https://npmcdn.com/getres/dist/getres.min.js">
+   <img
+    src="https://badge-size.herokuapp.com/WebSeed/getres/master/dist/getres.min.js.svg?compression=gzip"
+    alt="File size" />
+</a>
 
 Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images.
 
