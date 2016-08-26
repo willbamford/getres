@@ -36,6 +36,8 @@ npm i getres -S
 
 ## API
 
+...
+
 ### Promises
 
 To use promises you must ensure the environment supports these already. For some older browsers you may need to [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). Alternatively you can also set your own promise library with `getres.Promise = require('bluebird')` (or swap Bluebird for your library of choice).
