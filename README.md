@@ -1,24 +1,10 @@
 # getres [![CircleCI](https://circleci.com/gh/WebSeed/getres.svg?style=svg)](https://circleci.com/gh/WebSeed/getres)
 
-Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Lightweight at only ~6KB when compressed with support for loading text, JSON and images.
+Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images.
 
-Compatible with IE9+ and all other modern browsers with optional support for *promises*.
+**getres** is lightweight in the browser, at only ~6KB when compressed, and is compatible with IE9+ and all other modern browsers with optional support for *promises*.
 
-Uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
-
-Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.
-
-## Install
-
-```bash
-npm i getres -S
-```
-
-## Examples
-
-### Simple
-
-Demonstrates how you load a single `image` resource using ES5 and good old fashioned callbacks.
+## Simple example
 
 ```js
 var getres = require('getres')
@@ -26,7 +12,8 @@ var getres = require('getres')
 getres(
   {
     photo: {
-      src: 'http://example.com/photo.jpg'
+      src: 'http://example.com/photo.jpg',
+      type: 'image'
     }
   },
   function (err, resources) {
@@ -39,16 +26,32 @@ getres(
 )
 ```
 
-### Kitchen sink
+This example uses ES5 and traditional callbacks. See further down the README for more examples which include: loading multiple resources; loading arrays; objects and nested resources; using the _parser_ function; use of promises; and hooking into _progress_ events.
+
+## Install
+
+```bash
+npm i getres -S
+```
+
+## API
+
+### Promises
+
+To use promises you must ensure the environment supports these already. For some older browsers you may need to [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). Alternatively you can also set your own promise library with `getres.Promise = require('bluebird')` (or swap Bluebird for your library of choice).
+
+## Examples
+
+All of these examples use ES6 syntax which may require _transpilation_ to work across browsers.
+
+### Kitchen sink example
 
 In one giant ball of config (the `manifest`), this ES6 example demonstrates most of the functionality of `getres` including:
 * Loading different resource types: `text` (default), `json` and `image`.
 * Using a `parser` function to transform the resource.
-* Hooking into individual resource loading with `cb`.
-* Accessing the _resource tree_ using promises (instead of traditional callback).
+* Hooking into individual resource loading with the `cb` function.
+* Accessing the `resource` tree using promises instead of callbacks.
 * Hooking into _progress_ events.
-
-Note: to use promises you must ensure the environment supports these already. If you need to ensure support across browsers you can [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). You can also set your own promise library with `getres.Promise = require('bluebird')` (swap Bluebird for your promise library of choice).
 
 ```js
 import getres from 'getres'
@@ -86,7 +89,7 @@ getres({
 })
 ```
 
-### Using a source array
+### Source array example
 
 ```js
 getres({
@@ -116,7 +119,7 @@ getres({
 })
 ```
 
-### Using a source object
+### Source object example
 
 ```js
 getres({
@@ -146,7 +149,7 @@ getres({
 })
 ```
 
-### Nested
+### Nested example
 
 ```js
 getres({
@@ -169,6 +172,19 @@ getres({
 })
 ```
 
+## Development
+
+To test:
+```
+npm test
+```
+
+Contributions welcome!
+
 ## Credits
 
 `getres` was created after trying (and failing) to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
+
+`getres` uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
+
+Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.
