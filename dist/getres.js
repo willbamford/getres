@@ -11,8 +11,8 @@ var loaders = {
   invalidType: loadInvalidType
 }
 
-function identityParser (resource, cb) {
-  return cb(null, resource)
+function identityParser (resource) {
+  return resource
 }
 
 function createJob (src, node) {
@@ -36,6 +36,19 @@ function createJob (src, node) {
     return job
   }
 
+  function parseAndNotify (resource) {
+    try {
+      var syncResource = parser(resource, function (err, asyncResource) {
+        notify(err, asyncResource, job)
+      })
+      if (typeof syncResource !== 'undefined') {
+        notify(null, syncResource, job)
+      }
+    } catch (err) {
+      notify(err, null, job)
+    }
+  }
+
   var job = {
     src: src,
     type: type,
@@ -52,9 +65,8 @@ function createJob (src, node) {
       if (err) {
         return notify(err, resource, job)
       }
-      parser(resource, function (err, resource) {
-        notify(err, resource, job)
-      })
+
+      parseAndNotify(resource)
     })
   }
 
