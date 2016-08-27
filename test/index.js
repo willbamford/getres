@@ -313,14 +313,16 @@ test.cb('handle http errors', (t) => {
   )
 })
 
-test.cb('use parser function', (t) => {
+test.cb('use async parser function', (t) => {
   const { getres } = createGetres({ '/world.txt': { body: 'hello world' } })
   getres(
     {
       hello: {
         src: '/world.txt',
         parser: (resource, cb) => {
-          cb(null, resource.toUpperCase())
+          setTimeout(() => {
+            cb(null, resource.toUpperCase())
+          }, 0)
         }
       }
     },
@@ -332,7 +334,24 @@ test.cb('use parser function', (t) => {
   )
 })
 
-test.cb('handle parser error', (t) => {
+test.cb('use sync parser function', (t) => {
+  const { getres } = createGetres({ '/world.txt': { body: 'hello world' } })
+  getres(
+    {
+      hello: {
+        src: '/world.txt',
+        parser: (resource) => resource.toUpperCase()
+      }
+    },
+    (err, res) => {
+      t.is(err, null)
+      t.is(res.hello, 'HELLO WORLD')
+      t.end()
+    }
+  )
+})
+
+test.cb('handle async parser error', (t) => {
   const { getres } = createGetres({ '/world.txt': { body: 'hello world' } })
   const expectErr = new Error('Parse this!')
   getres(
@@ -341,6 +360,25 @@ test.cb('handle parser error', (t) => {
         src: '/world.txt',
         parser: (resource, cb) => {
           cb(expectErr)
+        }
+      }
+    },
+    (err, res) => {
+      t.is(err.message, 'Job error /world.txt. Parse this!')
+      t.end()
+    }
+  )
+})
+
+test.cb('handle sync parser error', (t) => {
+  const { getres } = createGetres({ '/world.txt': { body: 'hello world' } })
+  const expectErr = new Error('Parse this!')
+  getres(
+    {
+      hello: {
+        src: '/world.txt',
+        parser: (resource) => {
+          throw expectErr
         }
       }
     },
@@ -628,5 +666,3 @@ test.cb('send http credentials', (t) => {
     }
   )
 })
-
-test.todo('abort outstanding requests on error')

@@ -56,7 +56,7 @@ npm i getres -S
 
 ## API
 
-...
+Parser: sync vs. async
 
 ### Promises
 
@@ -84,7 +84,7 @@ getres({
   },
   parsedText: {
     src: 'http://example.com/my.txt',
-    parser: (resource, cb) => cb(null, resource.toUpperCase()),
+    parser: (resource) => resource.toUpperCase(),
     cb: (err, resource) => {
       if (err) {
         console.error(err)
