@@ -37,18 +37,12 @@ function createGetres (reqs) {
   const superagent = mockSuperagent(reqs)
   const httpLoader = proxyquire('../lib/loaders/http', { superagent })
   const getres = proxyquire('../lib', {
-    './process-manifest': proxyquire('../lib/process-manifest', {
-      './create-jobs': proxyquire('../lib/create-jobs', {
-        './create-job': proxyquire('../lib/create-job', {
-          './loaders/http': httpLoader,
-          './loaders/image': proxyquire('../lib/loaders/image', {
-            './http': httpLoader
-          }),
-          './loaders/json': proxyquire('../lib/loaders/json', {
-            './http': httpLoader
-          })
-        })
-      })
+    './loaders/http': httpLoader,
+    './loaders/image': proxyquire('../lib/loaders/image', {
+      './http': httpLoader
+    }),
+    './loaders/json': proxyquire('../lib/loaders/json', {
+      './http': httpLoader
     })
   })
   return {
@@ -276,7 +270,7 @@ test.cb('handle corrupt png image error', (t) => {
   )
 })
 
-test.cb('handle manifest type error', (t) => {
+test.cb('handle type error', (t) => {
   const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' }
@@ -287,7 +281,7 @@ test.cb('handle manifest type error', (t) => {
       bar: { src: '/bar.txt', type: 'invalid' }
     },
     (err, res) => {
-      t.is(err.message, 'Job error /bar.txt. Invalid manifest type: invalid')
+      t.is(err.message, 'Job error /bar.txt. Invalid type: invalid')
       t.deepEqual(res, {})
       t.end()
     }
@@ -417,7 +411,7 @@ test('handle http error promise', (t) => {
 })
 
 test.cb('progress with callback', (t) => {
-  var events = []
+  const events = []
   const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' },
@@ -484,7 +478,7 @@ test.cb('progress with callback', (t) => {
 })
 
 test.cb('progress with no jobs', (t) => {
-  var events = []
+  const events = []
   const { getres } = createGetres({})
   return getres(
     {},
@@ -513,7 +507,7 @@ test.cb('progress with no jobs', (t) => {
 })
 
 test.cb('progress with callback', (t) => {
-  var events = []
+  const events = []
   const { getres } = createGetres({
     '/foo.txt': { body: 'Foo' },
     '/bar.txt': { body: 'Bar' },
@@ -581,20 +575,20 @@ test.cb('progress with callback', (t) => {
 
 test.cb('set promise class', (t) => {
   t.plan(2)
-  var DummyPromise = function (cb) {
+  const DummyPromise = function (cb) {
     this.thenFns = []
     this.catchFns = []
     this.value = null
     this.error = null
 
-    var resolve = function (value) {
+    const resolve = function (value) {
       this.value = value
       this.thenFns.forEach((fn) => {
         fn(value)
       })
     }.bind(this)
 
-    var reject = function (err) {
+    const reject = function (err) {
       this.err = err
       this.catchFns.forEach((fn) => {
         fn(err)
@@ -665,4 +659,24 @@ test.cb('send http credentials', (t) => {
       t.end()
     }
   )
+})
+
+test('register custom loader', (t) => {
+  const { getres } = createGetres()
+
+  getres.register(
+    'twinsen',
+    (node, cb) => {
+      cb(null, 'Twinsen ' + node.src)
+    }
+  )
+
+  return getres({
+    zoe: {
+      src: 'some-file',
+      type: 'twinsen'
+    }
+  }).then(({ zoe }) => {
+    t.is(zoe, 'Twinsen some-file')
+  })
 })

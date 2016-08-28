@@ -260,6 +260,26 @@ getres({
 }
 ```
 
+### Register custom loader
+
+```js
+getres.register(
+  'twinsen',
+  (node, cb) => {
+    cb(null, 'Twinsen ' + node.src)
+  }
+)
+
+getres(
+  {
+    zoe: {
+      src: 'some-file',
+      type: 'twinsen'
+    }
+  }
+).then(({ zoe }) => { /* */ })
+```
+
 ## Development
 
 To test:

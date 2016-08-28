@@ -1,21 +1,9 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.getres = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var loadHttp = require('./loaders/http')
-var loadImage = require('./loaders/image')
-var loadJson = require('./loaders/json')
-var loadInvalidType = require('./loaders/invalid-type')
-
-var loaders = {
-  json: loadJson,
-  text: loadHttp,
-  image: loadImage,
-  invalidType: loadInvalidType
-}
-
 function identityParser (resource) {
   return resource
 }
 
-function createJob (src, node) {
+function createJob (src, node, loaders) {
   node = node || {}
   var type = node.type || 'text'
   var parser = node.parser || identityParser
@@ -75,10 +63,10 @@ function createJob (src, node) {
 
 module.exports = createJob
 
-},{"./loaders/http":4,"./loaders/image":5,"./loaders/invalid-type":6,"./loaders/json":7}],2:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 var createJob = require('./create-job')
 
-function createJobs () {
+function createJobs (loaders) {
   var jobs = []
   var runError
 
@@ -99,7 +87,7 @@ function createJobs () {
 
   return {
     enqueue: function (src, node) {
-      var job = createJob(src, node)
+      var job = createJob(src, node, loaders)
       add(job)
       return job
     },
@@ -157,11 +145,23 @@ function createJobs () {
 module.exports = createJobs
 
 },{"./create-job":1}],3:[function(require,module,exports){
-var processManifest = require('./process-manifest')
+var processConfig = require('./process-config')
 
-function getresCallback (manifest, callback, progress) {
+var loadHttp = require('./loaders/http')
+var loadImage = require('./loaders/image')
+var loadJson = require('./loaders/json')
+var loadInvalidType = require('./loaders/invalid-type')
+
+var loaders = {
+  json: loadJson,
+  text: loadHttp,
+  image: loadImage,
+  invalidType: loadInvalidType
+}
+
+function getresCallback (config, callback, progress) {
   try {
-    var results = processManifest(manifest)
+    var results = processConfig(config, loaders)
     var jobs = results.jobs
     var resources = results.resources
     jobs.process(
@@ -175,14 +175,14 @@ function getresCallback (manifest, callback, progress) {
   }
 }
 
-function getresPromises (manifest, callback, progress) {
+function getresPromises (config, callback, progress) {
   var PromiseImpl = typeof getres.Promise !== 'undefined'
     ? getres.Promise
     : (typeof Promise !== 'undefined' ? Promise : null)
   if (PromiseImpl) {
     return new PromiseImpl(function (resolve, reject) {
       getresCallback(
-        manifest,
+        config,
         function (err, res) {
           if (err) {
             return reject(err)
@@ -197,14 +197,18 @@ function getresPromises (manifest, callback, progress) {
   }
 }
 
-function getres (manifest, callback, progress) {
+function getres (config, callback, progress) {
   var fn = callback ? getresCallback : getresPromises
-  return fn(manifest, callback, progress)
+  return fn(config, callback, progress)
+}
+
+getres.register = function (type, loader) {
+  loaders[type] = loader
 }
 
 module.exports = getres
 
-},{"./process-manifest":8}],4:[function(require,module,exports){
+},{"./loaders/http":4,"./loaders/image":5,"./loaders/invalid-type":6,"./loaders/json":7,"./process-config":8}],4:[function(require,module,exports){
 var request = require('superagent')
 
 module.exports = function loadHttp (node, cb) {
@@ -228,12 +232,15 @@ module.exports = function loadImage (node, cb) {
   image.onerror = function (err) {
     cb(err)
   }
+  image.crossOrigin = node.credentials
+    ? 'use-credentials'
+    : 'anonymous'
   image.src = node.src
 }
 
 },{}],6:[function(require,module,exports){
 module.exports = function loadInvalidType (node, cb) {
-  cb(new Error('Invalid manifest type: ' + node.type), {})
+  cb(new Error('Invalid type: ' + node.type), {})
 }
 
 },{}],7:[function(require,module,exports){
@@ -317,17 +324,17 @@ function processNode (node, name, jobs, resources) {
   }
 }
 
-function processManifest (manifest) {
-  var jobs = createJobs()
+function processConfig (config, loaders) {
+  var jobs = createJobs(loaders)
   var resources = {}
-  processNode(manifest, null, jobs, resources)
+  processNode(config, null, jobs, resources)
   return {
     jobs: jobs,
     resources: resources
   }
 }
 
-module.exports = processManifest
+module.exports = processConfig
 
 },{"./create-jobs":2}],9:[function(require,module,exports){
 
