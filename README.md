@@ -95,13 +95,13 @@ getres(config, null, function (progress) { })
 
 An `object` where the *keys* correspond to the name of each resource and the *value* is itself an object with the following properties **or** *key(s)* for [nested resources](#nested-example):
 
-| Name          | Description                                                                                                                                                                        | Default |
-|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------|
-| `src`         | Resource URL(s) to load. Can be a [`string`](#simple-example), [`array`](#source-array-example) or [`object`](#source-object-example)                                              |         |
-| `type`        | `text`, `json` or `image`                                                                                                                                                          | `text`  |
-| `parser`      | A `function` used to transform the resource (*optional*). The function can directly return the transformed resource or pass the transformed resource to a callback e.g. for async. |         |
-| `cb`          | A `function` to hook into an individual resource's load events (*optional*)                                                                                                        |         |
-| `credentials` | For [CORS](https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image)                                                                                                   | `false` |
+| Name          | Description                                                                                                                                                                                                  | Default |
+|:--------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------|
+| `src`         | Resource URL(s) to load. Can be a [`string`](#simple-example), [`array`](#source-array-example) or [`object`](#source-object-example)                                                                        |         |
+| `type`        | `text`, `json` or `image`                                                                                                                                                                                    | `text`  |
+| `parser`      | A `function` used to transform the resource (*optional*). The function can [directly return the transformed resource or pass the transformed resource to a callback e.g. for async.](#sync-and-async-parser) |         |
+| `cb`          | A `function` to hook into an individual resource's load events (*optional*)                                                                                                                                  |         |
+| `credentials` | For [CORS](https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image)                                                                                                                             | `false` |
 
 ### Using promises
 
@@ -238,6 +238,26 @@ getres({
 }).catch((err) => {
   console.error(err)
 })
+```
+
+### Sync and async parser
+
+```js
+getres({
+  sync: {
+    src: 'http://example.com/foo.txt',
+    parser: (resource) => resource.toUpperCase()
+  },
+  async: {
+    src: 'http://example.com/bar.txt',
+    parser: (resource, cb) => {
+      setTimeout(() => {
+        cb(resource.toUpperCase())
+      }, 1000)
+    }
+  },
+  (err, resource) => {}
+}
 ```
 
 ## Development
