@@ -23,7 +23,7 @@
 
 Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images.
 
-**getres** is lightweight (weighing in at just over ~6KB in the browser when compressed) and is compatible with IE9+ and all other modern browsers with support for *promises* optional.
+**getres** is lightweight and compatible with IE9+ and all other modern browsers with support for *promises* optional.
 
 ## Simple example
 
@@ -74,7 +74,7 @@ var getres = require('getres')
 getres(
   config,
   function (err, res) { },
-  function (progress) { } /* optional */
+  function (progress) { } /* Optional */
 )
 ```
 
@@ -93,7 +93,7 @@ getres(config, null, function (progress) { })
 
 ### Config
 
-Config is an `object` where the *keys* correspond to the name of each resource and the *value* is itself an object with the following:
+An `object` where the *keys* correspond to the name of each resource and the *value* is itself an object with the following properties **or** *key(s)* for [nested resources](#nested-resources):
 
 | Name          | Description                                                                                                                                                                        | Default |
 |:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------|
