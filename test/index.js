@@ -680,3 +680,20 @@ test('register custom loader', (t) => {
     t.is(zoe, 'Twinsen some-file')
   })
 })
+
+test.cb('callback only called once', (t) => {
+  const { getres } = createGetres({
+    '/foo.txt': { err: new Error('Not Found') },
+    '/bar.txt': { err: new Error('Not Found') }
+  })
+  getres(
+    {
+      foo: { src: '/foo.txt' },
+      bar: { src: '/bar.txt' }
+    },
+    (err, res) => {
+      t.true(err !== null)
+      t.end()
+    }
+  )
+})
