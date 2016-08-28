@@ -21,7 +21,7 @@
     alt="File size" />
 </a>
 
-Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images.
+Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images. The API interface for **getres** is heavily inspired by that of [resl](https://github.com/mikolalysenko/resl), differing mainly in the ability to run in Node.js as well as the browser.
 
 **getres** is lightweight and compatible with IE9+ and all other modern browsers with support for *promises* optional.
 
