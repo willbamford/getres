@@ -1,4 +1,5 @@
 # getres
+
 <a href="https://circleci.com/gh/WebSeed/getres">
   <img
     src="https://circleci.com/gh/WebSeed/getres.svg?style=shield"
@@ -46,29 +47,74 @@ getres(
 )
 ```
 
-This example uses ES5 and traditional callbacks. See further down the README for more examples which include: loading multiple resources; loading arrays; objects and nested resources; using the _parser_ function; use of promises; and hooking into _progress_ events.
+This example uses ES5 and traditional callbacks. See further down the README for more examples which include: loading multiple resources; loading arrays; objects and nested resources; using the *parser* function; use of promises; and hooking into *progress* events.
 
-## Install
+## Getting started
 
 ```bash
 npm i getres -S
 ```
 
+Then:
+
+```js
+var getres = require('getres')
+
+// Or with ES6
+import getres from 'getres'
+```
+
 ## API
 
-Parser: sync vs. async
+You can use **getres** with or without promises. First without:
 
-### Promises
+```js
+var getres = require('getres')
+
+getres(
+  config,
+  function (err, res) { },
+  function (progress) { } /* optional */
+)
+```
+
+Now with promises:
+
+```js
+getres(config)
+  .then(function (res) { })
+  .catch(function (err) { })
+
+/* Or with progress listener */
+getres(config, null, function (progress) { })
+  .then(function (res) { })
+  .catch(function (err) { })
+```
+
+### Config
+
+Config is an `object` where the *keys* correspond to the name of each resource and the *value* is itself an object with the following:
+
+| Name          | Description                                                                                                                                                                        | Default |
+|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------|
+| `src`         | Resource URL(s) to load. Can be a [`string`](#simple-example), [`array`](#source-array-example) or [`object`](#source-object-example)                                              |         |
+| `type`        | `text`, `json` or `image`                                                                                                                                                          | `text`  |
+| `parser`      | A `function` used to transform the resource (*optional*). The function can directly return the transformed resource or pass the transformed resource to a callback e.g. for async. |         |
+| `cb`          | A `function` to hook into an individual resource's load events (*optional*)                                                                                                        |         |
+| `credentials` | Enable sending cookies from the origin for CORS                                                                                                                                    | `false` |
+
+### Using promises
 
 To use promises you must ensure the environment supports these already. For some older browsers you may need to [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). Alternatively you can also set your own promise library with `getres.Promise = require('bluebird')` (or swap Bluebird for your library of choice).
 
 ## Examples
 
-All of these examples use ES6 syntax which may require _transpilation_ to work across browsers.
+All of these examples use ES6 syntax which may require *transpilation* to work across browsers.
 
 ### Kitchen sink example
 
-In one giant ball of config (the `manifest`), this ES6 example demonstrates most of the functionality of **getres** including:
+In one giant ball of `config`, this ES6 example demonstrates most of the functionality of **getres** including:
+
 * Loading different resource types: `text` (default), `json` and `image`.
 * Using a `parser` function to transform the resource.
 * Hooking into individual resource loading with the `cb` function.
@@ -197,7 +243,8 @@ getres({
 ## Development
 
 To test:
-```
+
+```bash
 npm test
 ```
 
