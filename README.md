@@ -101,11 +101,11 @@ An `object` where the *keys* correspond to the name of each resource and the *va
 | `type`        | `text`, `json` or `image`                                                                                                                                                          | `text`  |
 | `parser`      | A `function` used to transform the resource (*optional*). The function can directly return the transformed resource or pass the transformed resource to a callback e.g. for async. |         |
 | `cb`          | A `function` to hook into an individual resource's load events (*optional*)                                                                                                        |         |
-| `credentials` | Enable sending cookies from the origin for CORS                                                                                                                                    | `false` |
+| `credentials` | For [CORS](https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_enabled_image)                                                                                                   | `false` |
 
 ### Using promises
 
-To use promises you must ensure the environment supports these already. For some older browsers you may need to [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). Alternatively you can also set your own promise library with `getres.Promise = require('bluebird')` (or swap Bluebird for your library of choice).
+To use promises you must ensure the environment supports these already. For some older browsers you may need to [use a suitable polyfill](https://github.com/stefanpenner/es6-promise#auto-polyfill). Alternatively you can also set your own promise library with `getres.Promise = require('bluebird')` (swap [Bluebird](https://github.com/petkaantonov/bluebird) for your library of choice).
 
 ## Examples
 
