@@ -113,7 +113,7 @@ All of these examples use ES6 syntax which may require *transpilation* to work a
 
 ### Kitchen sink example
 
-In one giant ball of `config`, this ES6 example demonstrates most of the functionality of **getres** including:
+In one giant ball of `config` this demonstrates most of the functionality of **getres** including:
 
 * Loading different resource types: `text` (default), `json` and `image`.
 * Using a `parser` function to transform the resource.
