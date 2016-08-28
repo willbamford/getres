@@ -93,7 +93,7 @@ getres(config, null, function (progress) { })
 
 ### Config
 
-An `object` where the *keys* correspond to the name of each resource and the *value* is itself an object with the following properties **or** *key(s)* for [nested resources](#nested-resources):
+An `object` where the *keys* correspond to the name of each resource and the *value* is itself an object with the following properties **or** *key(s)* for [nested resources](#nested-example):
 
 | Name          | Description                                                                                                                                                                        | Default |
 |:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------|
