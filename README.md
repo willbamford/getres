@@ -15,7 +15,7 @@
     src="https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square"
     alt="Standard" />
 </a>
-<a href="https://npmcdn.com/getres/dist/getres.min.js">
+<a href="https://unpkg.com/getres/dist/getres.min.js">
    <img
     src="https://badge-size.herokuapp.com/WebSeed/getres/master/dist/getres.min.js.svg?compression=gzip"
     alt="File size" />
