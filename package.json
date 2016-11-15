@@ -2,7 +2,7 @@
   "name": "getres",
   "version": "1.2.3",
   "description": "Universal Resource Loader for the Browser and Node.js",
-  "main": "lib/index.js",
+  "main": "lib",
   "browser": {
     "./lib/loaders/image": "./lib/loaders/image-browser"
   },

@@ -661,23 +661,27 @@ test.cb('send http credentials', (t) => {
   )
 })
 
-test('register custom loader', (t) => {
+test('register custom loaders', (t) => {
   const { getres } = createGetres()
 
-  getres.register(
-    'twinsen',
-    (node, cb) => {
+  getres
+    .register('twinsen', (node, cb) => {
       cb(null, 'Twinsen ' + node.src)
-    }
-  )
+    })
+    .register('joe', (node, cb) => 'the-elf')
 
   return getres({
     zoe: {
       src: 'some-file',
       type: 'twinsen'
+    },
+    elf: {
+      src: 'another-file',
+      type: 'joe'
     }
-  }).then(({ zoe }) => {
+  }).then(({ zoe, elf }) => {
     t.is(zoe, 'Twinsen some-file')
+    t.is(elf, 'the-elf')
   })
 })
 
