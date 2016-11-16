@@ -662,26 +662,32 @@ test.cb('send http credentials', (t) => {
 })
 
 test('register custom loaders', (t) => {
-  const { getres } = createGetres()
+  const { getres } = createGetres({
+    '/foo.txt': { body: 'Foo' }
+  })
 
   getres
-    .register('twinsen', (node, cb) => {
+    .register('twinsen', function twinsen (node, cb) {
       cb(null, 'Twinsen ' + node.src)
     })
-    .register('joe', (node, cb) => 'the-elf')
+    .register('zoe', function zoe (node, cb) {
+      cb(null, 'Zoe ' + node.src)
+    })
 
-  return getres({
-    zoe: {
-      src: 'some-file',
-      type: 'twinsen'
-    },
-    elf: {
-      src: 'another-file',
-      type: 'joe'
+  return getres(
+    {
+      twinsen: {
+        src: 'CITADEL.txt',
+        type: 'twinsen'
+      },
+      zoe: {
+        src: 'TWINSEN.txt',
+        type: 'zoe'
+      }
     }
-  }).then(({ zoe, elf }) => {
-    t.is(zoe, 'Twinsen some-file')
-    t.is(elf, 'the-elf')
+  ).then(({ twinsen, zoe }) => {
+    t.is(twinsen, 'Twinsen CITADEL.txt')
+    t.is(zoe, 'Zoe TWINSEN.txt')
   })
 })
 
