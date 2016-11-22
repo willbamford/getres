@@ -18,9 +18,11 @@ function createJob (src, node, loaders) {
   }
 
   function notify (err, resource, job) {
-    listeners.forEach(function (cb) {
-      cb(err, resource, job)
-    })
+    setTimeout(function () {
+      listeners.forEach(function (cb) {
+        cb(err, resource, job)
+      })
+    }, 0)
     return job
   }
 
@@ -68,7 +70,6 @@ var createJob = require('./create-job')
 
 function createJobs (loaders) {
   var jobs = []
-  var runError
 
   function add (job) {
     jobs.push(job)
@@ -94,6 +95,7 @@ function createJobs (loaders) {
     process: function (callback, progress) {
       var processed = 0
       var total = jobs.length
+      var cbCalled = false
 
       function sendProgress (type, props) {
         if (!progress) {
@@ -114,7 +116,8 @@ function createJobs (loaders) {
       }
 
       function checkDone () {
-        if (empty() && !runError) {
+        if (empty() && !cbCalled) {
+          cbCalled = true
           sendProgress('done')
           callback(null)
         }
@@ -123,9 +126,15 @@ function createJobs (loaders) {
       function onJobDone (err, resource, job) {
         remove(job)
         processed += 1
+
+        if (cbCalled) {
+          return
+        }
+
         if (err) {
-          runError = new Error('Job error ' + job.src + '. ' + err.message)
-          return callback(runError)
+          cbCalled = true
+          sendProgress('error', { src: job.src })
+          return callback(new Error('Job error ' + job.src + '. ' + err.message))
         }
 
         sendProgress('loaded', { src: job.src })
@@ -204,6 +213,7 @@ function getres (config, callback, progress) {
 
 getres.register = function (type, loader) {
   loaders[type] = loader
+  return this
 }
 
 module.exports = getres
@@ -1277,24 +1287,24 @@ Request.prototype.end = function(fn){
   };
 
   // progress
-  var handleProgress = function(e){
+  var handleProgress = function(direction, e) {
     if (e.total > 0) {
       e.percent = e.loaded / e.total * 100;
     }
-    e.direction = 'download';
+    e.direction = direction;
     self.emit('progress', e);
-  };
-  if (this.hasListeners('progress')) {
-    xhr.onprogress = handleProgress;
   }
-  try {
-    if (xhr.upload && this.hasListeners('progress')) {
-      xhr.upload.onprogress = handleProgress;
+  if (this.hasListeners('progress')) {
+    try {
+      xhr.onprogress = handleProgress.bind(null, 'download');
+      if (xhr.upload) {
+        xhr.upload.onprogress = handleProgress.bind(null, 'upload');
+      }
+    } catch(e) {
+      // Accessing xhr.upload fails in IE from a web worker, so just pretend it doesn't exist.
+      // Reported here:
+      // https://connect.microsoft.com/IE/feedback/details/837245/xmlhttprequest-upload-throws-invalid-argument-when-used-from-web-worker-context
     }
-  } catch(e) {
-    // Accessing xhr.upload fails in IE from a web worker, so just pretend it doesn't exist.
-    // Reported here:
-    // https://connect.microsoft.com/IE/feedback/details/837245/xmlhttprequest-upload-throws-invalid-argument-when-used-from-web-worker-context
   }
 
   // timeout
@@ -1574,6 +1584,10 @@ exports.then = function then(resolve, reject) {
   return this._fullfilledPromise.then(resolve, reject);
 }
 
+exports.catch = function(cb) {
+  return this.then(undefined, cb);
+};
+
 /**
  * Allow for extension
  */
@@ -1663,21 +1677,42 @@ exports.unset = function(field){
 };
 
 /**
- * Write the field `name` and `val` for "multipart/form-data"
- * request bodies.
+ * Write the field `name` and `val`, or multiple fields with one object
+ * for "multipart/form-data" request bodies.
  *
  * ``` js
  * request.post('/upload')
  *   .field('foo', 'bar')
  *   .end(callback);
+ *
+ * request.post('/upload')
+ *   .field({ foo: 'bar', baz: 'qux' })
+ *   .end(callback);
  * ```
  *
- * @param {String} name
+ * @param {String|Object} name
  * @param {String|Blob|File|Buffer|fs.ReadStream} val
  * @return {Request} for chaining
  * @api public
  */
 exports.field = function(name, val) {
+
+  // name should be either a string or an object.
+  if (null === name ||  undefined === name) {
+    throw new Error('.field(name, val) name can not be empty');
+  }
+
+  if (isObject(name)) {
+    for (var key in name) {
+      this.field(key, name[key]);
+    }
+    return this;
+  }
+
+  // val should be defined now
+  if (null === val || undefined === val) {
+    throw new Error('.field(name, val) val can not be empty');
+  }
   this._getFormData().append(name, val);
   return this;
 };
