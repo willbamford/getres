@@ -1,7 +1,8 @@
 var fs = require('fs')
+var path = require('path')
 
 function load (name) {
-  return fs.readFileSync('./fixtures/' + name)
+  return fs.readFileSync(path.resolve('test/fixtures', name))
 }
 
 var expectLossless = {

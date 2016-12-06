@@ -1,6 +1,6 @@
 {
   "name": "getres",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Universal Resource Loader for the Browser and Node.js",
   "main": "lib",
   "browser": {
@@ -52,17 +52,17 @@
   },
   "homepage": "https://github.com/WebSeed/getres#readme",
   "devDependencies": {
-    "ava": "^0.16.0",
+    "ava": "^0.17.0",
     "browserify": "^13.1.0",
-    "nyc": "^8.1.0",
+    "nyc": "^10.0.0",
     "proxyquire": "^1.7.10",
     "sinon": "^1.17.5",
-    "standard": "^7.1.2",
+    "standard": "^8.6.0",
     "uglifyify": "^3.0.2",
     "watchify": "^3.7.0"
   },
   "dependencies": {
     "lwip": "0.0.9",
-    "superagent": "^2.1.0"
+    "superagent": "^3.1.0"
   }
 }
