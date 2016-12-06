@@ -21,7 +21,7 @@ function mockSuperagent (reqs) {
         } else {
           cb(null, { body: req.body })
         }
-      }, 0)
+      }, req.delay || 0)
     },
     _test: {
       withCredentialsCalled: {}
@@ -72,17 +72,17 @@ test.cb('get text', (t) => {
 
 test.cb('get array src', (t) => {
   const { getres } = createGetres({
-    '/foo.txt': { body: 'Foo' },
-    '/bar.txt': { body: 'Bar' }
+    '/foo.txt': { body: 'Foo', delay: 5 },
+    '/bar.txt': { body: 'Bar', delay: 10 },
+    '/baz.txt': { body: 'Baz', delay: 0 }
   })
   getres(
-    {
-      arr: { src: [ '/foo.txt', '/bar.txt' ] }
-    },
+    { arr: { src: [ '/foo.txt', '/bar.txt', '/baz.txt' ] } },
     (err, res) => {
       t.is(err, null)
       t.is(res.arr[0], 'Foo')
       t.is(res.arr[1], 'Bar')
+      t.is(res.arr[2], 'Baz')
       t.end()
     }
   )
