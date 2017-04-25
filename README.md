@@ -21,7 +21,7 @@
     alt="File size" />
 </a>
 
-Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images. The API interface for **getres** is heavily inspired by that of [resl](https://github.com/mikolalysenko/resl), differing mainly in the ability to run in Node.js as well as the browser.
+Universal resource loading (browser and Node.js) designed to work with HTML5 Canvas and WebGL. Supports loading text, JSON, binary and images (using custom loaders). The API interface for **getres** is heavily inspired by that of [resl](https://github.com/mikolalysenko/resl), differing mainly in the ability to run in Node.js as well as the browser.
 
 **getres** is lightweight and compatible with IE9+ and all other modern browsers with support for *promises* optional.
 
@@ -52,16 +52,7 @@ This example uses ES5 and traditional callbacks. See further down the README for
 ## Getting started
 
 ```bash
-npm i getres -S
-```
-
-Then:
-
-```js
-var getres = require('getres')
-
-// Or with ES6
-import getres from 'getres'
+yarn add getres
 ```
 
 ## API
@@ -69,12 +60,12 @@ import getres from 'getres'
 You can use **getres** with or without promises. First without:
 
 ```js
-var getres = require('getres')
+import getres from 'getres'
 
 getres(
   config,
-  function (err, res) { },
-  function (progress) { } /* Optional */
+  (err, res) => { },
+  (progress) => { } /* Optional */
 )
 ```
 
@@ -82,13 +73,13 @@ Now with promises:
 
 ```js
 getres(config)
-  .then(function (res) { })
-  .catch(function (err) { })
+  .then(res => { })
+  .catch(err => { })
 
 /* Or with progress listener */
 getres(config, null, function (progress) { })
-  .then(function (res) { })
-  .catch(function (err) { })
+  .then(res => { })
+  .catch(err => { })
 ```
 
 ### Config
@@ -123,6 +114,9 @@ In one giant ball of `config` this demonstrates most of the functionality of **g
 
 ```js
 import getres from 'getres'
+
+// TODO: LOADER!
+getres.register()
 
 getres({
   text: {
@@ -295,5 +289,3 @@ Contributions welcome!
 **getres** was created after trying and failing to get [resl](https://github.com/mikolalysenko/resl) working across Node.js and the browser, with a view to using it headlessly with the excellent [regl](https://github.com/mikolalysenko/regl) WebGL library and [headless-gl](https://github.com/stackgl/headless-gl). So, the API resemblance between both libraries is strong. Thanks to [mikolalysenko](https://github.com/mikolalysenko) and contributors for all of the above.
 
 **getres** uses [superagent](https://github.com/visionmedia/superagent) behind the scenes to make HTTP requests.
-
-Image loading is achieved using the DOM API in the browser and [lwip](https://github.com/EyalAr/lwip) in Node.js.

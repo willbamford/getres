@@ -1,6 +1,5 @@
 const test = require('ava')
 const proxyquire = require('proxyquire')
-const images = require('./fixtures/images')
 
 function mockSuperagent (reqs) {
   return {
@@ -38,9 +37,6 @@ function createGetres (reqs) {
   const httpLoader = proxyquire('../lib/loaders/http', { superagent })
   const getres = proxyquire('../lib', {
     './loaders/http': httpLoader,
-    './loaders/image': proxyquire('../lib/loaders/image', {
-      './http': httpLoader
-    }),
     './loaders/json': proxyquire('../lib/loaders/json', {
       './http': httpLoader
     })
@@ -199,72 +195,6 @@ test.cb('handle json decode error', (t) => {
     },
     (err, res) => {
       t.true(beginsWith('Job error /invalid.json.', err.message))
-      t.end()
-    }
-  )
-})
-
-test.cb('get png image', (t) => {
-  const { getres } = createGetres({
-    '/img.png': { body: images.png.input }
-  })
-  getres(
-    {
-      img: { src: '/img.png', type: 'image' }
-    },
-    (err, res) => {
-      t.is(err, null)
-      t.deepEqual(res.img, images.png.expect)
-      t.end()
-    }
-  )
-})
-
-test.cb('get gif image', (t) => {
-  const { getres } = createGetres({
-    '/img.gif': { body: images.gif.input }
-  })
-  getres(
-    {
-      img: { src: '/img.gif', type: 'image' }
-    },
-    (err, res) => {
-      t.is(err, null)
-      t.deepEqual(res.img, images.gif.expect)
-      t.end()
-    }
-  )
-})
-
-test.cb('get jpg image', (t) => {
-  const { getres } = createGetres({
-    '/img1.jpg': { body: images.jpg.input },
-    '/img2.jpeg': { body: images.jpg.input }
-  })
-  getres(
-    {
-      img1: { src: '/img1.jpg', type: 'image' },
-      img2: { src: '/img2.jpeg', type: 'image' }
-    },
-    (err, res) => {
-      t.is(err, null)
-      t.deepEqual(res.img1, images.jpg.expect)
-      t.deepEqual(res.img2, images.jpg.expect)
-      t.end()
-    }
-  )
-})
-
-test.cb('handle corrupt png image error', (t) => {
-  const { getres } = createGetres({
-    '/corrupt.png': { body: images.corruptPng.input }
-  })
-  getres(
-    {
-      img: { src: '/corrupt.png', type: 'image' }
-    },
-    (err, res) => {
-      t.is(err.message, 'Job error /corrupt.png. Invalid PNG buffer')
       t.end()
     }
   )
