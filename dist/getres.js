@@ -157,14 +157,12 @@ module.exports = createJobs
 var processConfig = require('./process-config')
 
 var loadHttp = require('./loaders/http')
-var loadImage = require('./loaders/image')
 var loadJson = require('./loaders/json')
 var loadInvalidType = require('./loaders/invalid-type')
 
 var loaders = {
   json: loadJson,
   text: loadHttp,
-  image: loadImage,
   invalidType: loadInvalidType
 }
 
@@ -218,7 +216,7 @@ getres.register = function (type, loader) {
 
 module.exports = getres
 
-},{"./loaders/http":4,"./loaders/image":5,"./loaders/invalid-type":6,"./loaders/json":7,"./process-config":8}],4:[function(require,module,exports){
+},{"./loaders/http":4,"./loaders/invalid-type":5,"./loaders/json":6,"./process-config":7}],4:[function(require,module,exports){
 var request = require('superagent')
 
 module.exports = function loadHttp (node, cb) {
@@ -233,27 +231,12 @@ module.exports = function loadHttp (node, cb) {
   })
 }
 
-},{"superagent":10}],5:[function(require,module,exports){
-module.exports = function loadImage (node, cb) {
-  var image = new window.Image()
-  image.onload = function () {
-    cb(null, image)
-  }
-  image.onerror = function (err) {
-    cb(err)
-  }
-  image.crossOrigin = node.credentials
-    ? 'use-credentials'
-    : 'anonymous'
-  image.src = node.src
-}
-
-},{}],6:[function(require,module,exports){
+},{"superagent":9}],5:[function(require,module,exports){
 module.exports = function loadInvalidType (node, cb) {
   cb(new Error('Invalid type: ' + node.type), {})
 }
 
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var loadHttp = require('./http')
 
 module.exports = function loadJson (node, cb) {
@@ -269,7 +252,7 @@ module.exports = function loadJson (node, cb) {
   })
 }
 
-},{"./http":4}],8:[function(require,module,exports){
+},{"./http":4}],7:[function(require,module,exports){
 var createJobs = require('./create-jobs')
 
 function isArray (o) {
@@ -301,12 +284,12 @@ function processNode (node, name, jobs, resources) {
         })
     } else if (isArray(node.src)) {
       resources[name] = []
-      node.src.forEach(function (src) {
+      node.src.forEach(function (src, i) {
         jobs
           .enqueue(src, node)
           .listen(function (err, resource) {
             if (!err) {
-              resources[name].push(resource)
+              resources[name][i] = resource
             }
           })
       })
@@ -346,7 +329,7 @@ function processConfig (config, loaders) {
 
 module.exports = processConfig
 
-},{"./create-jobs":2}],9:[function(require,module,exports){
+},{"./create-jobs":2}],8:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -511,7 +494,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],10:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  * Root reference for iframes.
  */
@@ -526,9 +509,12 @@ if (typeof window !== 'undefined') { // Browser window
   root = this;
 }
 
-var Emitter = require('emitter');
-var requestBase = require('./request-base');
+var Emitter = require('component-emitter');
+var RequestBase = require('./request-base');
 var isObject = require('./is-object');
+var isFunction = require('./is-function');
+var ResponseBase = require('./response-base');
+var shouldRetry = require('./should-retry');
 
 /**
  * Noop.
@@ -540,7 +526,21 @@ function noop(){};
  * Expose `request`.
  */
 
-var request = module.exports = require('./request').bind(null, Request);
+var request = exports = module.exports = function(method, url) {
+  // callback
+  if ('function' == typeof url) {
+    return new exports.Request('GET', method).end(url);
+  }
+
+  // url first
+  if (1 == arguments.length) {
+    return new exports.Request('GET', method);
+  }
+
+  return new exports.Request(method, url);
+}
+
+exports.Request = Request;
 
 /**
  * Determine XHR.
@@ -744,37 +744,6 @@ function isJSON(mime) {
 }
 
 /**
- * Return the mime type for the given `str`.
- *
- * @param {String} str
- * @return {String}
- * @api private
- */
-
-function type(str){
-  return str.split(/ *; */).shift();
-};
-
-/**
- * Return header field parameters.
- *
- * @param {String} str
- * @return {Object}
- * @api private
- */
-
-function params(str){
-  return str.split(/ *; */).reduce(function(obj, str){
-    var parts = str.split(/ *= */),
-        key = parts.shift(),
-        val = parts.shift();
-
-    if (key && val) obj[key] = val;
-    return obj;
-  }, {});
-};
-
-/**
  * Initialize a new `Response` with the given `xhr`.
  *
  *  - set flags (.ok, .error, etc)
@@ -820,8 +789,7 @@ function params(str){
  * @api private
  */
 
-function Response(req, options) {
-  options = options || {};
+function Response(req) {
   this.req = req;
   this.xhr = this.req.xhr;
   // responseText is accessible only if responseType is '' or 'text' and on older browsers
@@ -829,51 +797,29 @@ function Response(req, options) {
      ? this.xhr.responseText
      : null;
   this.statusText = this.req.xhr.statusText;
-  this._setStatusProperties(this.xhr.status);
+  var status = this.xhr.status;
+  // handle IE9 bug: http://stackoverflow.com/questions/10046972/msie-returns-status-code-of-1223-for-ajax-request
+  if (status === 1223) {
+      status = 204;
+  }
+  this._setStatusProperties(status);
   this.header = this.headers = parseHeader(this.xhr.getAllResponseHeaders());
   // getAllResponseHeaders sometimes falsely returns "" for CORS requests, but
   // getResponseHeader still works. so we get content-type even if getting
   // other headers fails.
   this.header['content-type'] = this.xhr.getResponseHeader('content-type');
   this._setHeaderProperties(this.header);
-  this.body = this.req.method != 'HEAD'
-    ? this._parseBody(this.text ? this.text : this.xhr.response)
-    : null;
+
+  if (null === this.text && req._responseType) {
+    this.body = this.xhr.response;
+  } else {
+    this.body = this.req.method != 'HEAD'
+      ? this._parseBody(this.text ? this.text : this.xhr.response)
+      : null;
+  }
 }
 
-/**
- * Get case-insensitive `field` value.
- *
- * @param {String} field
- * @return {String}
- * @api public
- */
-
-Response.prototype.get = function(field){
-  return this.header[field.toLowerCase()];
-};
-
-/**
- * Set header related properties:
- *
- *   - `.type` the content type without params
- *
- * A response of "Content-Type: text/plain; charset=utf-8"
- * will provide you with a `.type` of "text/plain".
- *
- * @param {Object} header
- * @api private
- */
-
-Response.prototype._setHeaderProperties = function(header){
-  // content-type
-  var ct = this.header['content-type'] || '';
-  this.type = type(ct);
-
-  // params
-  var obj = params(ct);
-  for (var key in obj) this[key] = obj[key];
-};
+ResponseBase(Response.prototype);
 
 /**
  * Parse the given body `str`.
@@ -888,64 +834,15 @@ Response.prototype._setHeaderProperties = function(header){
 
 Response.prototype._parseBody = function(str){
   var parse = request.parse[this.type];
+  if(this.req._parser) {
+    return this.req._parser(this, str);
+  }
   if (!parse && isJSON(this.type)) {
     parse = request.parse['application/json'];
   }
   return parse && str && (str.length || str instanceof Object)
     ? parse(str)
     : null;
-};
-
-/**
- * Set flags such as `.ok` based on `status`.
- *
- * For example a 2xx response will give you a `.ok` of __true__
- * whereas 5xx will be __false__ and `.error` will be __true__. The
- * `.clientError` and `.serverError` are also available to be more
- * specific, and `.statusType` is the class of error ranging from 1..5
- * sometimes useful for mapping respond colors etc.
- *
- * "sugar" properties are also defined for common cases. Currently providing:
- *
- *   - .noContent
- *   - .badRequest
- *   - .unauthorized
- *   - .notAcceptable
- *   - .notFound
- *
- * @param {Number} status
- * @api private
- */
-
-Response.prototype._setStatusProperties = function(status){
-  // handle IE9 bug: http://stackoverflow.com/questions/10046972/msie-returns-status-code-of-1223-for-ajax-request
-  if (status === 1223) {
-    status = 204;
-  }
-
-  var type = status / 100 | 0;
-
-  // status / class
-  this.status = this.statusCode = status;
-  this.statusType = type;
-
-  // basics
-  this.info = 1 == type;
-  this.ok = 2 == type;
-  this.clientError = 4 == type;
-  this.serverError = 5 == type;
-  this.error = (4 == type || 5 == type)
-    ? this.toError()
-    : false;
-
-  // sugar
-  this.accepted = 202 == status;
-  this.noContent = 204 == status;
-  this.badRequest = 400 == status;
-  this.unauthorized = 401 == status;
-  this.notAcceptable = 406 == status;
-  this.notFound = 404 == status;
-  this.forbidden = 403 == status;
 };
 
 /**
@@ -1001,9 +898,17 @@ function Request(method, url) {
       err.parse = true;
       err.original = e;
       // issue #675: return the raw response if the response parsing fails
-      err.rawResponse = self.xhr && self.xhr.responseText ? self.xhr.responseText : null;
-      // issue #876: return the http status code if the response parsing fails
-      err.statusCode = self.xhr && self.xhr.status ? self.xhr.status : null;
+      if (self.xhr) {
+        // ie9 doesn't have 'response' property
+        err.rawResponse = typeof self.xhr.responseType == 'undefined' ? self.xhr.responseText : self.xhr.response;
+        // issue #876: return the http status code if the response parsing fails
+        err.status = self.xhr.status ? self.xhr.status : null;
+        err.statusCode = err.status; // backwards-compat only
+      } else {
+        err.rawResponse = null;
+        err.status = null;
+      }
+
       return self.callback(err);
     }
 
@@ -1011,7 +916,7 @@ function Request(method, url) {
 
     var new_err;
     try {
-      if (res.status < 200 || res.status >= 300) {
+      if (!self._isResponseOK(res)) {
         new_err = new Error(res.statusText || 'Unsuccessful HTTP response');
         new_err.original = err;
         new_err.response = res;
@@ -1031,13 +936,11 @@ function Request(method, url) {
 }
 
 /**
- * Mixin `Emitter` and `requestBase`.
+ * Mixin `Emitter` and `RequestBase`.
  */
 
 Emitter(Request.prototype);
-for (var key in requestBase) {
-  Request.prototype[key] = requestBase[key];
-}
+RequestBase(Request.prototype);
 
 /**
  * Set Content-Type to `type`, mapping values from `request.types`.
@@ -1063,26 +966,6 @@ for (var key in requestBase) {
 
 Request.prototype.type = function(type){
   this.set('Content-Type', request.types[type] || type);
-  return this;
-};
-
-/**
- * Set responseType to `val`. Presently valid responseTypes are 'blob' and
- * 'arraybuffer'.
- *
- * Examples:
- *
- *      req.get('/')
- *        .responseType('blob')
- *        .end(callback);
- *
- * @param {String} val
- * @return {Request} for chaining
- * @api public
- */
-
-Request.prototype.responseType = function(val){
-  this._responseType = val;
   return this;
 };
 
@@ -1115,46 +998,52 @@ Request.prototype.accept = function(type){
  * Set Authorization field value with `user` and `pass`.
  *
  * @param {String} user
- * @param {String} pass
- * @param {Object} options with 'type' property 'auto' or 'basic' (default 'basic')
+ * @param {String} [pass] optional in case of using 'bearer' as type
+ * @param {Object} options with 'type' property 'auto', 'basic' or 'bearer' (default 'basic')
  * @return {Request} for chaining
  * @api public
  */
 
 Request.prototype.auth = function(user, pass, options){
+  if (typeof pass === 'object' && pass !== null) { // pass is optional and can substitute for options
+    options = pass;
+  }
   if (!options) {
     options = {
-      type: 'basic'
+      type: 'function' === typeof btoa ? 'basic' : 'auto',
     }
   }
 
   switch (options.type) {
     case 'basic':
-      var str = btoa(user + ':' + pass);
-      this.set('Authorization', 'Basic ' + str);
+      this.set('Authorization', 'Basic ' + btoa(user + ':' + pass));
     break;
 
     case 'auto':
       this.username = user;
       this.password = pass;
     break;
+      
+    case 'bearer': // usage would be .auth(accessToken, { type: 'bearer' })
+      this.set('Authorization', 'Bearer ' + user);
+    break;  
   }
   return this;
 };
 
 /**
-* Add query-string `val`.
-*
-* Examples:
-*
-*   request.get('/shoes')
-*     .query('size=10')
-*     .query({ color: 'blue' })
-*
-* @param {Object|String} val
-* @return {Request} for chaining
-* @api public
-*/
+ * Add query-string `val`.
+ *
+ * Examples:
+ *
+ *   request.get('/shoes')
+ *     .query('size=10')
+ *     .query({ color: 'blue' })
+ *
+ * @param {Object|String} val
+ * @return {Request} for chaining
+ * @api public
+ */
 
 Request.prototype.query = function(val){
   if ('string' != typeof val) val = serialize(val);
@@ -1164,7 +1053,7 @@ Request.prototype.query = function(val){
 
 /**
  * Queue the given `file` as an attachment to the specified `field`,
- * with optional `filename`.
+ * with optional `options` (or filename).
  *
  * ``` js
  * request.post('/upload')
@@ -1174,13 +1063,19 @@ Request.prototype.query = function(val){
  *
  * @param {String} field
  * @param {Blob|File} file
- * @param {String} filename
+ * @param {String|Object} options
  * @return {Request} for chaining
  * @api public
  */
 
-Request.prototype.attach = function(field, file, filename){
-  this._getFormData().append(field, file, filename || file.name);
+Request.prototype.attach = function(field, file, options){
+  if (file) {
+    if (this._data) {
+      throw Error("superagent can't mix .send() and .attach()");
+    }
+
+    this._getFormData().append(field, file, options || file.name);
+  }
   return this;
 };
 
@@ -1201,8 +1096,19 @@ Request.prototype._getFormData = function(){
  */
 
 Request.prototype.callback = function(err, res){
+  // console.log(this._retries, this._maxRetries)
+  if (this._maxRetries && this._retries++ < this._maxRetries && shouldRetry(err, res)) {
+    return this._retry();
+  }
+
   var fn = this._callback;
   this.clearTimeout();
+
+  if (err) {
+    if (this._maxRetries) err.retries = this._retries - 1;
+    this.emit('error', err);
+  }
+
   fn(err, res);
 };
 
@@ -1223,17 +1129,15 @@ Request.prototype.crossDomainError = function(){
   this.callback(err);
 };
 
-/**
- * Invoke callback with timeout error.
- *
- * @api private
- */
+// This only warns, because the request is still likely to work
+Request.prototype.buffer = Request.prototype.ca = Request.prototype.agent = function(){
+  console.warn("This is not supported in browser version of superagent");
+  return this;
+};
 
-Request.prototype._timeoutError = function(){
-  var timeout = this._timeout;
-  var err = new Error('timeout of ' + timeout + 'ms exceeded');
-  err.timeout = timeout;
-  this.callback(err);
+// This throws, because it can't send/receive data as expected
+Request.prototype.pipe = Request.prototype.write = function(){
+  throw Error("Streaming is not supported in browser version of superagent");
 };
 
 /**
@@ -1245,11 +1149,35 @@ Request.prototype._timeoutError = function(){
 Request.prototype._appendQueryString = function(){
   var query = this._query.join('&');
   if (query) {
-    this.url += ~this.url.indexOf('?')
-      ? '&' + query
-      : '?' + query;
+    this.url += (this.url.indexOf('?') >= 0 ? '&' : '?') + query;
+  }
+
+  if (this._sort) {
+    var index = this.url.indexOf('?');
+    if (index >= 0) {
+      var queryArr = this.url.substring(index + 1).split('&');
+      if (isFunction(this._sort)) {
+        queryArr.sort(this._sort);
+      } else {
+        queryArr.sort();
+      }
+      this.url = this.url.substring(0, index) + '?' + queryArr.join('&');
+    }
   }
 };
+
+/**
+ * Check if `obj` is a host object,
+ * we don't want to serialize these :)
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+Request.prototype._isHost = function _isHost(obj) {
+  // Native objects stringify to [object File], [object Blob], [object FormData], etc.
+  return obj && 'object' === typeof obj && !Array.isArray(obj) && Object.prototype.toString.call(obj) !== '[object Object]';
+}
 
 /**
  * Initiate request, invoking callback `fn(res)`
@@ -1261,26 +1189,44 @@ Request.prototype._appendQueryString = function(){
  */
 
 Request.prototype.end = function(fn){
-  var self = this;
-  var xhr = this.xhr = request.getXHR();
-  var timeout = this._timeout;
-  var data = this._formData || this._data;
+  if (this._endCalled) {
+    console.warn("Warning: .end() was called twice. This is not supported in superagent");
+  }
+  this._endCalled = true;
 
   // store callback
   this._callback = fn || noop;
 
+  // querystring
+  this._appendQueryString();
+
+  return this._end();
+};
+
+Request.prototype._end = function() {
+  var self = this;
+  var xhr = this.xhr = request.getXHR();
+  var data = this._formData || this._data;
+
+  this._setTimeouts();
+
   // state change
   xhr.onreadystatechange = function(){
-    if (4 != xhr.readyState) return;
+    var readyState = xhr.readyState;
+    if (readyState >= 2 && self._responseTimeoutTimer) {
+      clearTimeout(self._responseTimeoutTimer);
+    }
+    if (4 != readyState) {
+      return;
+    }
 
     // In IE9, reads to any property (e.g. status) off of an aborted XHR will
     // result in the error "Could not complete the operation due to error c00c023f"
     var status;
     try { status = xhr.status } catch(e) { status = 0; }
 
-    if (0 == status) {
-      if (self.timedout) return self._timeoutError();
-      if (self._aborted) return;
+    if (!status) {
+      if (self.timedout || self._aborted) return;
       return self.crossDomainError();
     }
     self.emit('end');
@@ -1307,40 +1253,38 @@ Request.prototype.end = function(fn){
     }
   }
 
-  // timeout
-  if (timeout && !this._timer) {
-    this._timer = setTimeout(function(){
-      self.timedout = true;
-      self.abort();
-    }, timeout);
-  }
-
-  // querystring
-  this._appendQueryString();
-
   // initiate request
-  if (this.username && this.password) {
-    xhr.open(this.method, this.url, true, this.username, this.password);
-  } else {
-    xhr.open(this.method, this.url, true);
+  try {
+    if (this.username && this.password) {
+      xhr.open(this.method, this.url, true, this.username, this.password);
+    } else {
+      xhr.open(this.method, this.url, true);
+    }
+  } catch (err) {
+    // see #1149
+    return this.callback(err);
   }
 
   // CORS
   if (this._withCredentials) xhr.withCredentials = true;
 
   // body
-  if ('GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !this._isHost(data)) {
+  if (!this._formData && 'GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !this._isHost(data)) {
     // serialize stuff
     var contentType = this._header['content-type'];
     var serialize = this._serializer || request.serialize[contentType ? contentType.split(';')[0] : ''];
-    if (!serialize && isJSON(contentType)) serialize = request.serialize['application/json'];
+    if (!serialize && isJSON(contentType)) {
+      serialize = request.serialize['application/json'];
+    }
     if (serialize) data = serialize(data);
   }
 
   // set header fields
   for (var field in this.header) {
     if (null == this.header[field]) continue;
-    xhr.setRequestHeader(field, this.header[field]);
+
+    if (this.header.hasOwnProperty(field))
+      xhr.setRequestHeader(field, this.header[field]);
   }
 
   if (this._responseType) {
@@ -1355,13 +1299,6 @@ Request.prototype.end = function(fn){
   xhr.send(typeof data !== 'undefined' ? data : null);
   return this;
 };
-
-
-/**
- * Expose `Request`.
- */
-
-request.Request = Request;
 
 /**
  * GET `url` with optional callback `fn(res)`.
@@ -1418,16 +1355,19 @@ request.options = function(url, data, fn){
 };
 
 /**
- * DELETE `url` with optional callback `fn(res)`.
+ * DELETE `url` with optional `data` and callback `fn(res)`.
  *
  * @param {String} url
+ * @param {Mixed} [data]
  * @param {Function} [fn]
  * @return {Request}
  * @api public
  */
 
-function del(url, fn){
+function del(url, data, fn){
   var req = request('DELETE', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
   if (fn) req.end(fn);
   return req;
 };
@@ -1489,7 +1429,24 @@ request.put = function(url, data, fn){
   return req;
 };
 
-},{"./is-object":11,"./request":13,"./request-base":12,"emitter":9}],11:[function(require,module,exports){
+},{"./is-function":10,"./is-object":11,"./request-base":12,"./response-base":13,"./should-retry":14,"component-emitter":8}],10:[function(require,module,exports){
+/**
+ * Check if `fn` is a function.
+ *
+ * @param {Function} fn
+ * @return {Boolean}
+ * @api private
+ */
+var isObject = require('./is-object');
+
+function isFunction(fn) {
+  var tag = isObject(fn) ? Object.prototype.toString.call(fn) : '';
+  return tag === '[object Function]';
+}
+
+module.exports = isFunction;
+
+},{"./is-object":11}],11:[function(require,module,exports){
 /**
  * Check if `obj` is an object.
  *
@@ -1511,15 +1468,48 @@ module.exports = isObject;
 var isObject = require('./is-object');
 
 /**
+ * Expose `RequestBase`.
+ */
+
+module.exports = RequestBase;
+
+/**
+ * Initialize a new `RequestBase`.
+ *
+ * @api public
+ */
+
+function RequestBase(obj) {
+  if (obj) return mixin(obj);
+}
+
+/**
+ * Mixin the prototype properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in RequestBase.prototype) {
+    obj[key] = RequestBase.prototype[key];
+  }
+  return obj;
+}
+
+/**
  * Clear previous timeout.
  *
  * @return {Request} for chaining
  * @api public
  */
 
-exports.clearTimeout = function _clearTimeout(){
-  this._timeout = 0;
+RequestBase.prototype.clearTimeout = function _clearTimeout(){
   clearTimeout(this._timer);
+  clearTimeout(this._responseTimeoutTimer);
+  delete this._timer;
+  delete this._responseTimeoutTimer;
   return this;
 };
 
@@ -1532,8 +1522,31 @@ exports.clearTimeout = function _clearTimeout(){
  * @api public
  */
 
-exports.parse = function parse(fn){
+RequestBase.prototype.parse = function parse(fn){
   this._parser = fn;
+  return this;
+};
+
+/**
+ * Set format of binary response body.
+ * In browser valid formats are 'blob' and 'arraybuffer',
+ * which return Blob and ArrayBuffer, respectively.
+ *
+ * In Node all values result in Buffer.
+ *
+ * Examples:
+ *
+ *      req.get('/')
+ *        .responseType('blob')
+ *        .end(callback);
+ *
+ * @param {String} val
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.responseType = function(val){
+  this._responseType = val;
   return this;
 };
 
@@ -1546,35 +1559,101 @@ exports.parse = function parse(fn){
  * @api public
  */
 
-exports.serialize = function serialize(fn){
+RequestBase.prototype.serialize = function serialize(fn){
   this._serializer = fn;
   return this;
 };
 
 /**
- * Set timeout to `ms`.
+ * Set timeouts.
  *
- * @param {Number} ms
+ * - response timeout is time between sending request and receiving the first byte of the response. Includes DNS and connection time.
+ * - deadline is the time from start of the request to receiving response body in full. If the deadline is too short large files may not load at all on slow connections.
+ *
+ * Value of 0 or false means no timeout.
+ *
+ * @param {Number|Object} ms or {response, read, deadline}
  * @return {Request} for chaining
  * @api public
  */
 
-exports.timeout = function timeout(ms){
-  this._timeout = ms;
+RequestBase.prototype.timeout = function timeout(options){
+  if (!options || 'object' !== typeof options) {
+    this._timeout = options;
+    this._responseTimeout = 0;
+    return this;
+  }
+
+  for(var option in options) {
+    switch(option) {
+      case 'deadline':
+        this._timeout = options.deadline;
+        break;
+      case 'response':
+        this._responseTimeout = options.response;
+        break;
+      default:
+        console.warn("Unknown timeout option", option);
+    }
+  }
   return this;
+};
+
+/**
+ * Set number of retry attempts on error.
+ *
+ * Failed requests will be retried 'count' times if timeout or err.code >= 500.
+ *
+ * @param {Number} count
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.retry = function retry(count){
+  // Default to 1 if no count passed or true
+  if (arguments.length === 0 || count === true) count = 1;
+  if (count <= 0) count = 0;
+  this._maxRetries = count;
+  this._retries = 0;
+  return this;
+};
+
+/**
+ * Retry request
+ *
+ * @return {Request} for chaining
+ * @api private
+ */
+
+RequestBase.prototype._retry = function() {
+  this.clearTimeout();
+
+  // node
+  if (this.req) {
+    this.req = null;
+    this.req = this.request();
+  }
+
+  this._aborted = false;
+  this.timedout = false;
+
+  return this._end();
 };
 
 /**
  * Promise support
  *
  * @param {Function} resolve
- * @param {Function} reject
+ * @param {Function} [reject]
  * @return {Request}
  */
 
-exports.then = function then(resolve, reject) {
+RequestBase.prototype.then = function then(resolve, reject) {
   if (!this._fullfilledPromise) {
     var self = this;
+    if (this._endCalled) {
+      console.warn("Warning: superagent request was sent twice, because both .end() and .then() were called. Never call .end() if you use promises");
+    }
     this._fullfilledPromise = new Promise(function(innerResolve, innerReject){
       self.end(function(err, res){
         if (err) innerReject(err); else innerResolve(res);
@@ -1584,7 +1663,7 @@ exports.then = function then(resolve, reject) {
   return this._fullfilledPromise.then(resolve, reject);
 }
 
-exports.catch = function(cb) {
+RequestBase.prototype.catch = function(cb) {
   return this.then(undefined, cb);
 };
 
@@ -1592,10 +1671,28 @@ exports.catch = function(cb) {
  * Allow for extension
  */
 
-exports.use = function use(fn) {
+RequestBase.prototype.use = function use(fn) {
   fn(this);
   return this;
 }
+
+RequestBase.prototype.ok = function(cb) {
+  if ('function' !== typeof cb) throw Error("Callback required");
+  this._okCallback = cb;
+  return this;
+};
+
+RequestBase.prototype._isResponseOK = function(res) {
+  if (!res) {
+    return false;
+  }
+
+  if (this._okCallback) {
+    return this._okCallback(res);
+  }
+
+  return res.status >= 200 && res.status < 300;
+};
 
 
 /**
@@ -1607,7 +1704,7 @@ exports.use = function use(fn) {
  * @api public
  */
 
-exports.get = function(field){
+RequestBase.prototype.get = function(field){
   return this._header[field.toLowerCase()];
 };
 
@@ -1623,7 +1720,7 @@ exports.get = function(field){
  * @deprecated
  */
 
-exports.getHeader = exports.get;
+RequestBase.prototype.getHeader = RequestBase.prototype.get;
 
 /**
  * Set header `field` to `val`, or multiple fields with one object.
@@ -1646,7 +1743,7 @@ exports.getHeader = exports.get;
  * @api public
  */
 
-exports.set = function(field, val){
+RequestBase.prototype.set = function(field, val){
   if (isObject(field)) {
     for (var key in field) {
       this.set(key, field[key]);
@@ -1670,7 +1767,7 @@ exports.set = function(field, val){
  *
  * @param {String} field
  */
-exports.unset = function(field){
+RequestBase.prototype.unset = function(field){
   delete this._header[field.toLowerCase()];
   delete this.header[field];
   return this;
@@ -1695,11 +1792,15 @@ exports.unset = function(field){
  * @return {Request} for chaining
  * @api public
  */
-exports.field = function(name, val) {
+RequestBase.prototype.field = function(name, val) {
 
   // name should be either a string or an object.
   if (null === name ||  undefined === name) {
     throw new Error('.field(name, val) name can not be empty');
+  }
+
+  if (this._data) {
+    console.error(".field() can't be used if .send() is used. Please use only .send() or only .field() & .attach()");
   }
 
   if (isObject(name)) {
@@ -1709,9 +1810,19 @@ exports.field = function(name, val) {
     return this;
   }
 
+  if (Array.isArray(val)) {
+    for (var i in val) {
+      this.field(name, val[i]);
+    }
+    return this;
+  }
+
   // val should be defined now
   if (null === val || undefined === val) {
     throw new Error('.field(name, val) val can not be empty');
+  }
+  if ('boolean' === typeof val) {
+    val = '' + val;
   }
   this._getFormData().append(name, val);
   return this;
@@ -1723,7 +1834,7 @@ exports.field = function(name, val) {
  * @return {Request}
  * @api public
  */
-exports.abort = function(){
+RequestBase.prototype.abort = function(){
   if (this._aborted) {
     return this;
   }
@@ -1746,9 +1857,10 @@ exports.abort = function(){
  * @api public
  */
 
-exports.withCredentials = function(){
+RequestBase.prototype.withCredentials = function(on){
   // This is browser-only functionality. Node side is no-op.
-  this._withCredentials = true;
+  if(on==undefined) on = true;
+  this._withCredentials = on;
   return this;
 };
 
@@ -1760,7 +1872,7 @@ exports.withCredentials = function(){
  * @api public
  */
 
-exports.redirects = function(n){
+RequestBase.prototype.redirects = function(n){
   this._maxRedirects = n;
   return this;
 };
@@ -1774,7 +1886,7 @@ exports.redirects = function(n){
  * @api public
  */
 
-exports.toJSON = function(){
+RequestBase.prototype.toJSON = function(){
   return {
     method: this.method,
     url: this.url,
@@ -1783,29 +1895,6 @@ exports.toJSON = function(){
   };
 };
 
-/**
- * Check if `obj` is a host object,
- * we don't want to serialize these :)
- *
- * TODO: future proof, move to compoent land
- *
- * @param {Object} obj
- * @return {Boolean}
- * @api private
- */
-
-exports._isHost = function _isHost(obj) {
-  var str = {}.toString.call(obj);
-
-  switch (str) {
-    case '[object File]':
-    case '[object Blob]':
-    case '[object FormData]':
-      return true;
-    default:
-      return false;
-  }
-}
 
 /**
  * Send `data` as the request body, defaulting the `.type()` to "json" when
@@ -1847,12 +1936,26 @@ exports._isHost = function _isHost(obj) {
  * @api public
  */
 
-exports.send = function(data){
-  var obj = isObject(data);
+RequestBase.prototype.send = function(data){
+  var isObj = isObject(data);
   var type = this._header['content-type'];
 
+  if (this._formData) {
+    console.error(".send() can't be used if .attach() or .field() is used. Please use only .send() or only .field() & .attach()");
+  }
+
+  if (isObj && !this._data) {
+    if (Array.isArray(data)) {
+      this._data = [];
+    } else if (!this._isHost(data)) {
+      this._data = {};
+    }
+  } else if (data && this._data && this._isHost(this._data)) {
+    throw Error("Can't merge these send calls");
+  }
+
   // merge
-  if (obj && isObject(this._data)) {
+  if (isObj && isObject(this._data)) {
     for (var key in data) {
       this._data[key] = data[key];
     }
@@ -1871,46 +1974,314 @@ exports.send = function(data){
     this._data = data;
   }
 
-  if (!obj || this._isHost(data)) return this;
+  if (!isObj || this._isHost(data)) {
+    return this;
+  }
 
   // default to json
   if (!type) this.type('json');
   return this;
 };
 
-},{"./is-object":11}],13:[function(require,module,exports){
-// The node and browser modules expose versions of this with the
-// appropriate constructor function bound as first argument
+
 /**
- * Issue a request:
+ * Sort `querystring` by the sort function
+ *
  *
  * Examples:
  *
- *    request('GET', '/users').end(callback)
- *    request('/users').end(callback)
- *    request('/users', callback)
+ *       // default order
+ *       request.get('/user')
+ *         .query('name=Nick')
+ *         .query('search=Manny')
+ *         .sortQuery()
+ *         .end(callback)
  *
- * @param {String} method
- * @param {String|Function} url or callback
- * @return {Request}
+ *       // customized sort function
+ *       request.get('/user')
+ *         .query('name=Nick')
+ *         .query('search=Manny')
+ *         .sortQuery(function(a, b){
+ *           return a.length - b.length;
+ *         })
+ *         .end(callback)
+ *
+ *
+ * @param {Function} sort
+ * @return {Request} for chaining
  * @api public
  */
 
-function request(RequestConstructor, method, url) {
-  // callback
-  if ('function' == typeof url) {
-    return new RequestConstructor('GET', method).end(url);
-  }
+RequestBase.prototype.sortQuery = function(sort) {
+  // _sort default to true but otherwise can be a function or boolean
+  this._sort = typeof sort === 'undefined' ? true : sort;
+  return this;
+};
 
-  // url first
-  if (2 == arguments.length) {
-    return new RequestConstructor('GET', method);
-  }
+/**
+ * Invoke callback with timeout error.
+ *
+ * @api private
+ */
 
-  return new RequestConstructor(method, url);
+RequestBase.prototype._timeoutError = function(reason, timeout, errno){
+  if (this._aborted) {
+    return;
+  }
+  var err = new Error(reason + timeout + 'ms exceeded');
+  err.timeout = timeout;
+  err.code = 'ECONNABORTED';
+  err.errno = errno;
+  this.timedout = true;
+  this.abort();
+  this.callback(err);
+};
+
+RequestBase.prototype._setTimeouts = function() {
+  var self = this;
+
+  // deadline
+  if (this._timeout && !this._timer) {
+    this._timer = setTimeout(function(){
+      self._timeoutError('Timeout of ', self._timeout, 'ETIME');
+    }, this._timeout);
+  }
+  // response timeout
+  if (this._responseTimeout && !this._responseTimeoutTimer) {
+    this._responseTimeoutTimer = setTimeout(function(){
+      self._timeoutError('Response timeout of ', self._responseTimeout, 'ETIMEDOUT');
+    }, this._responseTimeout);
+  }
 }
 
-module.exports = request;
+},{"./is-object":11}],13:[function(require,module,exports){
 
+/**
+ * Module dependencies.
+ */
+
+var utils = require('./utils');
+
+/**
+ * Expose `ResponseBase`.
+ */
+
+module.exports = ResponseBase;
+
+/**
+ * Initialize a new `ResponseBase`.
+ *
+ * @api public
+ */
+
+function ResponseBase(obj) {
+  if (obj) return mixin(obj);
+}
+
+/**
+ * Mixin the prototype properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in ResponseBase.prototype) {
+    obj[key] = ResponseBase.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Get case-insensitive `field` value.
+ *
+ * @param {String} field
+ * @return {String}
+ * @api public
+ */
+
+ResponseBase.prototype.get = function(field){
+    return this.header[field.toLowerCase()];
+};
+
+/**
+ * Set header related properties:
+ *
+ *   - `.type` the content type without params
+ *
+ * A response of "Content-Type: text/plain; charset=utf-8"
+ * will provide you with a `.type` of "text/plain".
+ *
+ * @param {Object} header
+ * @api private
+ */
+
+ResponseBase.prototype._setHeaderProperties = function(header){
+    // TODO: moar!
+    // TODO: make this a util
+
+    // content-type
+    var ct = header['content-type'] || '';
+    this.type = utils.type(ct);
+
+    // params
+    var params = utils.params(ct);
+    for (var key in params) this[key] = params[key];
+
+    this.links = {};
+
+    // links
+    try {
+        if (header.link) {
+            this.links = utils.parseLinks(header.link);
+        }
+    } catch (err) {
+        // ignore
+    }
+};
+
+/**
+ * Set flags such as `.ok` based on `status`.
+ *
+ * For example a 2xx response will give you a `.ok` of __true__
+ * whereas 5xx will be __false__ and `.error` will be __true__. The
+ * `.clientError` and `.serverError` are also available to be more
+ * specific, and `.statusType` is the class of error ranging from 1..5
+ * sometimes useful for mapping respond colors etc.
+ *
+ * "sugar" properties are also defined for common cases. Currently providing:
+ *
+ *   - .noContent
+ *   - .badRequest
+ *   - .unauthorized
+ *   - .notAcceptable
+ *   - .notFound
+ *
+ * @param {Number} status
+ * @api private
+ */
+
+ResponseBase.prototype._setStatusProperties = function(status){
+    var type = status / 100 | 0;
+
+    // status / class
+    this.status = this.statusCode = status;
+    this.statusType = type;
+
+    // basics
+    this.info = 1 == type;
+    this.ok = 2 == type;
+    this.redirect = 3 == type;
+    this.clientError = 4 == type;
+    this.serverError = 5 == type;
+    this.error = (4 == type || 5 == type)
+        ? this.toError()
+        : false;
+
+    // sugar
+    this.accepted = 202 == status;
+    this.noContent = 204 == status;
+    this.badRequest = 400 == status;
+    this.unauthorized = 401 == status;
+    this.notAcceptable = 406 == status;
+    this.forbidden = 403 == status;
+    this.notFound = 404 == status;
+};
+
+},{"./utils":15}],14:[function(require,module,exports){
+var ERROR_CODES = [
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'EADDRINFO',
+  'ESOCKETTIMEDOUT'
+];
+
+/**
+ * Determine if a request should be retried.
+ * (Borrowed from segmentio/superagent-retry)
+ *
+ * @param {Error} err
+ * @param {Response} [res]
+ * @returns {Boolean}
+ */
+module.exports = function shouldRetry(err, res) {
+  if (err && err.code && ~ERROR_CODES.indexOf(err.code)) return true;
+  if (res && res.status && res.status >= 500) return true;
+  // Superagent timeout
+  if (err && 'timeout' in err && err.code == 'ECONNABORTED') return true;
+  if (err && 'crossDomain' in err) return true;
+  return false;
+};
+
+},{}],15:[function(require,module,exports){
+
+/**
+ * Return the mime type for the given `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+exports.type = function(str){
+  return str.split(/ *; */).shift();
+};
+
+/**
+ * Return header field parameters.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+exports.params = function(str){
+  return str.split(/ *; */).reduce(function(obj, str){
+    var parts = str.split(/ *= */);
+    var key = parts.shift();
+    var val = parts.shift();
+
+    if (key && val) obj[key] = val;
+    return obj;
+  }, {});
+};
+
+/**
+ * Parse Link header fields.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+exports.parseLinks = function(str){
+  return str.split(/ *, */).reduce(function(obj, str){
+    var parts = str.split(/ *; */);
+    var url = parts[0].slice(1, -1);
+    var rel = parts[1].split(/ *= */)[1].slice(1, -1);
+    obj[rel] = url;
+    return obj;
+  }, {});
+};
+
+/**
+ * Strip content related fields from `header`.
+ *
+ * @param {Object} header
+ * @return {Object} header
+ * @api private
+ */
+
+exports.cleanHeader = function(header, shouldStripCookie){
+  delete header['content-type'];
+  delete header['content-length'];
+  delete header['transfer-encoding'];
+  delete header['host'];
+  if (shouldStripCookie) {
+    delete header['cookie'];
+  }
+  return header;
+};
 },{}]},{},[3])(3)
 });
